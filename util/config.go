@@ -9,7 +9,6 @@ import (
 type Config struct {
 	APPPORT      string `mapstructure:"APP_PORT"`
 	APPNAME      string `mapstructure:"APP_NAME"`
-	APPENV       string `mapstructure:"APP_ENV"`
 	APPDEBUG     string `mapstructure:"APP_DEBUG"`
 	DBCONNECTION string `mapstructure:"DB_CONNECTION"`
 	DBHOST       string `mapstructure:"DB_HOST"`

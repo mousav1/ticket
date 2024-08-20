@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+        - ./app.env
+    depends_on:
+      - db
+      - migrate
+
+  db:
+    image: postgres:15
+    env_file:
+        - ./app.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  
+  migrate:
+    image: migrate/migrate:latest
+    entrypoint: [ "/bin/sh", "/entrypoint.sh" ]
+    volumes:
+      - ./db/migration:/migrations
+      - ./entrypoint.sh:/entrypoint.sh 
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
