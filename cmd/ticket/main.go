@@ -5,15 +5,15 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/mousv1/ticket/api"
-	db "github.com/mousv1/ticket/db/sqlc"
-	"github.com/mousv1/ticket/routes"
-	"github.com/mousv1/ticket/util"
+	"github.com/mousv1/ticket/internal/api"
+	db "github.com/mousv1/ticket/internal/db/sqlc"
+	"github.com/mousv1/ticket/internal/routes"
+	"github.com/mousv1/ticket/internal/util"
 	"github.com/rs/zerolog/log"
 )
 
 func main() {
-	config, err := util.LoadConfig(".")
+	config, err := util.LoadConfig("../../")
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot load config")
 	}

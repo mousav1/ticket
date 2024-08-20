@@ -1,4 +1,4 @@
-package middleware
+package test
 
 import (
 	"fmt"
@@ -8,10 +8,11 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mousv1/ticket/api"
-	db "github.com/mousv1/ticket/db/sqlc"
-	"github.com/mousv1/ticket/token"
-	"github.com/mousv1/ticket/util"
+	"github.com/mousv1/ticket/internal/api"
+	"github.com/mousv1/ticket/internal/api/middleware"
+	db "github.com/mousv1/ticket/internal/db/sqlc"
+	"github.com/mousv1/ticket/internal/token"
+	"github.com/mousv1/ticket/internal/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -88,7 +89,7 @@ func TestAuthMiddleware(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			server := newTestServer(t, nil)
 			authPath := "/auth"
-			server.App.Get(authPath, AuthMiddleware(server.TokenMaker), func(c *fiber.Ctx) error {
+			server.App.Get(authPath, middleware.AuthMiddleware(server.TokenMaker), func(c *fiber.Ctx) error {
 				return c.SendStatus(fiber.StatusOK)
 			})
 

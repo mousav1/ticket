@@ -2,8 +2,8 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/mousv1/ticket/api"
-	"github.com/mousv1/ticket/api/middleware"
+	"github.com/mousv1/ticket/internal/api"
+	"github.com/mousv1/ticket/internal/api/middleware"
 )
 
 func SetupRoutes(server *api.Server) error {
