@@ -1,0 +1,48 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5"
+	db "github.com/mousv1/ticket/db/sqlc"
+	"github.com/mousv1/ticket/routes"
+	"github.com/mousv1/ticket/util"
+	"github.com/rs/zerolog/log"
+)
+
+func main() {
+	config, err := util.LoadConfig(".")
+	if err != nil {
+		log.Fatal().Err(err).Msg("cannot load config")
+	}
+
+	// Connect to the database
+
+	dsn := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+		config.DBUSERNAME,
+		config.DBPASSWORD,
+		config.DBHOST,
+		config.DBPORT,
+		config.DBDATABASE,
+	)
+
+	conn, err := pgx.Connect(context.Background(), dsn)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Unable to connect to database")
+	}
+	defer conn.Close(context.Background())
+
+	store := db.New(conn)
+
+	app := fiber.New()
+
+	// Register the routes
+	if err := routes.SetupRoutes(app, store); err != nil {
+		log.Fatal().Err(err).Msg("ailed to set up routes")
+	}
+
+	app.Listen(fmt.Sprintf(":%s", config.APPPORT))
+
+}
