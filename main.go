@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5"
+	"github.com/mousv1/ticket/api"
 	db "github.com/mousv1/ticket/db/sqlc"
 	"github.com/mousv1/ticket/routes"
 	"github.com/mousv1/ticket/util"
@@ -19,7 +19,6 @@ func main() {
 	}
 
 	// Connect to the database
-
 	dsn := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		config.DBUSERNAME,
 		config.DBPASSWORD,
@@ -36,13 +35,18 @@ func main() {
 
 	store := db.New(conn)
 
-	app := fiber.New()
+	server, err := api.NewServer(config, store)
+	if err != nil {
+		log.Fatal().Err(err).Msg("cannot create serve")
+	}
 
 	// Register the routes
-	if err := routes.SetupRoutes(app, store); err != nil {
+	if err := routes.SetupRoutes(server); err != nil {
 		log.Fatal().Err(err).Msg("ailed to set up routes")
 	}
 
-	app.Listen(fmt.Sprintf(":%s", config.APPPORT))
-
+	err = server.Start(config.APPPORT)
+	if err != nil {
+		log.Fatal().Err(err).Msg("cannot start serve")
+	}
 }
