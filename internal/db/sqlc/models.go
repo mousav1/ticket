@@ -5,69 +5,86 @@
 package db
 
 import (
+	"time"
+
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Bus struct {
-	ID               int32
-	RouteID          pgtype.Int4
-	DepartureTime    pgtype.Timestamptz
-	ArrivalTime      pgtype.Timestamptz
-	Capacity         int32
-	Price            int32
-	BusType          string
-	Corporation      pgtype.Text
-	SuperCorporation pgtype.Text
-	ServiceNumber    pgtype.Text
-	IsVip            pgtype.Bool
+	ID               int32       `json:"id"`
+	RouteID          pgtype.Int4 `json:"route_id"`
+	DepartureTime    time.Time   `json:"departure_time"`
+	ArrivalTime      time.Time   `json:"arrival_time"`
+	Capacity         int32       `json:"capacity"`
+	Price            int32       `json:"price"`
+	BusType          string      `json:"bus_type"`
+	Corporation      pgtype.Text `json:"corporation"`
+	SuperCorporation pgtype.Text `json:"super_corporation"`
+	ServiceNumber    pgtype.Text `json:"service_number"`
+	IsVip            pgtype.Bool `json:"is_vip"`
 }
 
 type BusSeat struct {
-	ID                    int32
-	BusID                 pgtype.Int4
-	SeatNumber            int32
-	Status                int32
-	PassengerNationalCode pgtype.Text
+	ID                    int32       `json:"id"`
+	BusID                 pgtype.Int4 `json:"bus_id"`
+	SeatNumber            int32       `json:"seat_number"`
+	Status                int32       `json:"status"`
+	PassengerNationalCode pgtype.Text `json:"passenger_national_code"`
 }
 
 type City struct {
-	ID   int32
-	Name string
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
 }
 
 type Penalty struct {
-	ID                int32
-	BusID             pgtype.Int4
-	ActualHoursBefore pgtype.Float8
-	HoursBefore       pgtype.Float8
-	Percent           int32
-	CustomText        pgtype.Text
+	ID                int32         `json:"id"`
+	BusID             pgtype.Int4   `json:"bus_id"`
+	ActualHoursBefore pgtype.Float8 `json:"actual_hours_before"`
+	HoursBefore       pgtype.Float8 `json:"hours_before"`
+	Percent           int32         `json:"percent"`
+	CustomText        pgtype.Text   `json:"custom_text"`
 }
 
 type Route struct {
-	ID                    int32
-	OriginTerminalID      pgtype.Int4
-	DestinationTerminalID pgtype.Int4
-	Duration              pgtype.Interval
-	Distance              int32
+	ID                    int32           `json:"id"`
+	OriginTerminalID      pgtype.Int4     `json:"origin_terminal_id"`
+	DestinationTerminalID pgtype.Int4     `json:"destination_terminal_id"`
+	Duration              pgtype.Interval `json:"duration"`
+	Distance              int32           `json:"distance"`
+}
+
+type Session struct {
+	ID           uuid.UUID `json:"id"`
+	Username     string    `json:"username"`
+	RefreshToken string    `json:"refresh_token"`
+	UserAgent    string    `json:"user_agent"`
+	ClientIp     string    `json:"client_ip"`
+	IsBlocked    bool      `json:"is_blocked"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type Terminal struct {
-	ID     int32
-	CityID pgtype.Int4
-	Name   string
+	ID     int32       `json:"id"`
+	CityID pgtype.Int4 `json:"city_id"`
+	Name   string      `json:"name"`
 }
 
 type Ticket struct {
-	ID         int32
-	UserID     pgtype.Int4
-	BusID      pgtype.Int4
-	SeatID     pgtype.Int4
-	ReservedAt pgtype.Timestamptz
+	ID         int32              `json:"id"`
+	UserID     pgtype.Int4        `json:"user_id"`
+	BusID      pgtype.Int4        `json:"bus_id"`
+	SeatID     pgtype.Int4        `json:"seat_id"`
+	ReservedAt pgtype.Timestamptz `json:"reserved_at"`
 }
 
 type User struct {
-	ID           int32
-	Username     string
-	PasswordHash string
+	ID                int32     `json:"id"`
+	Username          string    `json:"username"`
+	HashedPassword    string    `json:"hashed_password"`
+	FullName          string    `json:"full_name"`
+	PasswordChangedAt time.Time `json:"password_changed_at"`
+	CreatedAt         time.Time `json:"created_at"`
 }

@@ -9,7 +9,7 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o main ./cmd/ticket
+RUN go build -o main ./cmd
 
 # Stage 2: Create a minimal Docker image with the Go binary
 FROM alpine:latest

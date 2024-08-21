@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -18,11 +19,11 @@ RETURNING id, bus_id, actual_hours_before, hours_before, percent, custom_text
 `
 
 type CreatePenaltyParams struct {
-	BusID             pgtype.Int4
-	ActualHoursBefore pgtype.Float8
-	HoursBefore       pgtype.Float8
-	Percent           int32
-	CustomText        pgtype.Text
+	BusID             pgtype.Int4   `json:"bus_id"`
+	ActualHoursBefore pgtype.Float8 `json:"actual_hours_before"`
+	HoursBefore       pgtype.Float8 `json:"hours_before"`
+	Percent           int32         `json:"percent"`
+	CustomText        pgtype.Text   `json:"custom_text"`
 }
 
 func (q *Queries) CreatePenalty(ctx context.Context, arg CreatePenaltyParams) (Penalty, error) {
@@ -67,7 +68,7 @@ func (q *Queries) GetBusPenalties(ctx context.Context, busID pgtype.Int4) ([]Pen
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Penalty
+	items := []Penalty{}
 	for rows.Next() {
 		var i Penalty
 		if err := rows.Scan(
@@ -108,10 +109,10 @@ WHERE id = $1
 `
 
 type GetTicketByIDRow struct {
-	ID         int32
-	UserID     pgtype.Int4
-	BusID      pgtype.Int4
-	ReservedAt pgtype.Timestamptz
+	ID         int32              `json:"id"`
+	UserID     pgtype.Int4        `json:"user_id"`
+	BusID      pgtype.Int4        `json:"bus_id"`
+	ReservedAt pgtype.Timestamptz `json:"reserved_at"`
 }
 
 func (q *Queries) GetTicketByID(ctx context.Context, id int32) (GetTicketByIDRow, error) {
@@ -134,17 +135,17 @@ WHERE t.user_id = $1
 `
 
 type GetUserTicketsRow struct {
-	ID               int32
-	RouteID          pgtype.Int4
-	DepartureTime    pgtype.Timestamptz
-	ArrivalTime      pgtype.Timestamptz
-	Capacity         int32
-	Price            int32
-	BusType          string
-	Corporation      pgtype.Text
-	SuperCorporation pgtype.Text
-	ServiceNumber    pgtype.Text
-	IsVip            pgtype.Bool
+	ID               int32       `json:"id"`
+	RouteID          pgtype.Int4 `json:"route_id"`
+	DepartureTime    time.Time   `json:"departure_time"`
+	ArrivalTime      time.Time   `json:"arrival_time"`
+	Capacity         int32       `json:"capacity"`
+	Price            int32       `json:"price"`
+	BusType          string      `json:"bus_type"`
+	Corporation      pgtype.Text `json:"corporation"`
+	SuperCorporation pgtype.Text `json:"super_corporation"`
+	ServiceNumber    pgtype.Text `json:"service_number"`
+	IsVip            pgtype.Bool `json:"is_vip"`
 }
 
 func (q *Queries) GetUserTickets(ctx context.Context, userID pgtype.Int4) ([]GetUserTicketsRow, error) {
@@ -153,7 +154,7 @@ func (q *Queries) GetUserTickets(ctx context.Context, userID pgtype.Int4) ([]Get
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetUserTicketsRow
+	items := []GetUserTicketsRow{}
 	for rows.Next() {
 		var i GetUserTicketsRow
 		if err := rows.Scan(
@@ -186,9 +187,9 @@ ON CONFLICT (user_id, bus_id, seat_id) DO NOTHING
 `
 
 type ReserveTicketParams struct {
-	UserID pgtype.Int4
-	BusID  pgtype.Int4
-	SeatID pgtype.Int4
+	UserID pgtype.Int4 `json:"user_id"`
+	BusID  pgtype.Int4 `json:"bus_id"`
+	SeatID pgtype.Int4 `json:"seat_id"`
 }
 
 func (q *Queries) ReserveTicket(ctx context.Context, arg ReserveTicketParams) error {

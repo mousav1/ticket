@@ -19,10 +19,10 @@ RETURNING id, origin_terminal_id, destination_terminal_id, duration, distance
 `
 
 type CreateRouteParams struct {
-	OriginTerminalID      pgtype.Int4
-	DestinationTerminalID pgtype.Int4
-	Duration              pgtype.Interval
-	Distance              int32
+	OriginTerminalID      pgtype.Int4     `json:"origin_terminal_id"`
+	DestinationTerminalID pgtype.Int4     `json:"destination_terminal_id"`
+	Duration              pgtype.Interval `json:"duration"`
+	Distance              int32           `json:"distance"`
 }
 
 // routes.sql
@@ -56,7 +56,7 @@ func (q *Queries) GetAllRoutes(ctx context.Context) ([]Route, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Route
+	items := []Route{}
 	for rows.Next() {
 		var i Route
 		if err := rows.Scan(
@@ -83,8 +83,8 @@ WHERE origin_terminal_id = $1 AND destination_terminal_id = $2
 `
 
 type GetRouteByTerminalsParams struct {
-	OriginTerminalID      pgtype.Int4
-	DestinationTerminalID pgtype.Int4
+	OriginTerminalID      pgtype.Int4 `json:"origin_terminal_id"`
+	DestinationTerminalID pgtype.Int4 `json:"destination_terminal_id"`
 }
 
 // پیدا کردن یک مسیر بر اساس مبدا و مقصد

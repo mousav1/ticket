@@ -19,8 +19,8 @@ RETURNING id, city_id, name
 `
 
 type CreateTerminalParams struct {
-	CityID pgtype.Int4
-	Name   string
+	CityID pgtype.Int4 `json:"city_id"`
+	Name   string      `json:"name"`
 }
 
 // terminals.sql
@@ -56,7 +56,7 @@ func (q *Queries) GetTerminalsByCity(ctx context.Context, cityID pgtype.Int4) ([
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Terminal
+	items := []Terminal{}
 	for rows.Next() {
 		var i Terminal
 		if err := rows.Scan(&i.ID, &i.CityID, &i.Name); err != nil {

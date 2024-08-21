@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -19,16 +20,16 @@ RETURNING id, route_id, departure_time, arrival_time, capacity, price, bus_type,
 `
 
 type CreateBusParams struct {
-	RouteID          pgtype.Int4
-	DepartureTime    pgtype.Timestamptz
-	ArrivalTime      pgtype.Timestamptz
-	Capacity         int32
-	Price            int32
-	BusType          string
-	Corporation      pgtype.Text
-	SuperCorporation pgtype.Text
-	ServiceNumber    pgtype.Text
-	IsVip            pgtype.Bool
+	RouteID          pgtype.Int4 `json:"route_id"`
+	DepartureTime    time.Time   `json:"departure_time"`
+	ArrivalTime      time.Time   `json:"arrival_time"`
+	Capacity         int32       `json:"capacity"`
+	Price            int32       `json:"price"`
+	BusType          string      `json:"bus_type"`
+	Corporation      pgtype.Text `json:"corporation"`
+	SuperCorporation pgtype.Text `json:"super_corporation"`
+	ServiceNumber    pgtype.Text `json:"service_number"`
+	IsVip            pgtype.Bool `json:"is_vip"`
 }
 
 // buses.sql
@@ -69,10 +70,10 @@ RETURNING id, bus_id, seat_number, status, passenger_national_code
 `
 
 type CreateBusSeatParams struct {
-	BusID                 pgtype.Int4
-	SeatNumber            int32
-	Status                int32
-	PassengerNationalCode pgtype.Text
+	BusID                 pgtype.Int4 `json:"bus_id"`
+	SeatNumber            int32       `json:"seat_number"`
+	Status                int32       `json:"status"`
+	PassengerNationalCode pgtype.Text `json:"passenger_national_code"`
 }
 
 func (q *Queries) CreateBusSeat(ctx context.Context, arg CreateBusSeatParams) (BusSeat, error) {
@@ -130,7 +131,7 @@ func (q *Queries) GetBusSeats(ctx context.Context, busID pgtype.Int4) ([]BusSeat
 		return nil, err
 	}
 	defer rows.Close()
-	var items []BusSeat
+	items := []BusSeat{}
 	for rows.Next() {
 		var i BusSeat
 		if err := rows.Scan(
@@ -158,9 +159,9 @@ WHERE r.origin_terminal_id = $1 AND r.destination_terminal_id = $2 AND b.departu
 `
 
 type SearchBusesParams struct {
-	OriginTerminalID      pgtype.Int4
-	DestinationTerminalID pgtype.Int4
-	DepartureTime         pgtype.Timestamptz
+	OriginTerminalID      pgtype.Int4 `json:"origin_terminal_id"`
+	DestinationTerminalID pgtype.Int4 `json:"destination_terminal_id"`
+	DepartureTime         time.Time   `json:"departure_time"`
 }
 
 func (q *Queries) SearchBuses(ctx context.Context, arg SearchBusesParams) ([]Bus, error) {
@@ -169,7 +170,7 @@ func (q *Queries) SearchBuses(ctx context.Context, arg SearchBusesParams) ([]Bus
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Bus
+	items := []Bus{}
 	for rows.Next() {
 		var i Bus
 		if err := rows.Scan(
@@ -205,9 +206,9 @@ WHERE t_origin.city_id = $1 AND t_destination.city_id = $2 AND b.departure_time 
 `
 
 type SearchBusesByCitiesParams struct {
-	CityID        pgtype.Int4
-	CityID_2      pgtype.Int4
-	DepartureTime pgtype.Timestamptz
+	CityID        pgtype.Int4 `json:"city_id"`
+	CityID_2      pgtype.Int4 `json:"city_id_2"`
+	DepartureTime time.Time   `json:"departure_time"`
 }
 
 func (q *Queries) SearchBusesByCities(ctx context.Context, arg SearchBusesByCitiesParams) ([]Bus, error) {
@@ -216,7 +217,7 @@ func (q *Queries) SearchBusesByCities(ctx context.Context, arg SearchBusesByCiti
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Bus
+	items := []Bus{}
 	for rows.Next() {
 		var i Bus
 		if err := rows.Scan(

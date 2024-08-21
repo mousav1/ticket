@@ -33,7 +33,7 @@ func (q *Queries) GetAllCities(ctx context.Context) ([]City, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []City
+	items := []City{}
 	for rows.Next() {
 		var i City
 		if err := rows.Scan(&i.ID, &i.Name); err != nil {

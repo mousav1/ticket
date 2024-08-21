@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/mousv1/ticket/internal/api"
+	"github.com/mousv1/ticket/internal/api/handlers"
 	"github.com/mousv1/ticket/internal/api/middleware"
 )
 
@@ -13,10 +14,13 @@ func SetupRoutes(server *api.Server) error {
 		return c.SendString("Hello, World 👋!")
 	})
 
-	// Grouped routes that require authentication
-	authGroup := server.App.Group("/api/v1", middleware.AuthMiddleware(server.TokenMaker))
+	server.App.Post("/register", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).RegisterUser)
+	server.App.Post("/login", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).LoginUser)
 
-	authGroup.Get("/test", func(c *fiber.Ctx) error {
+	// Grouped routes that require authentication
+	authGroup := server.App.Group("/user", middleware.AuthMiddleware(server.TokenMaker))
+
+	authGroup.Get("/info", func(c *fiber.Ctx) error {
 		return c.SendString("test")
 	})
 
