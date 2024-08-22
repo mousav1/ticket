@@ -38,6 +38,11 @@ type loginUserResponse struct {
 	User                  userResponse `json:"user"`
 }
 
+type loginUserRequest struct {
+	Username string `json:"username" binding:"required,alphanum"`
+	Password string `json:"password" binding:"required,min=6"`
+}
+
 func newUserResponse(user db.User) userResponse {
 	return userResponse{
 		Username:          user.Username,
@@ -72,9 +77,6 @@ func (h *UserHandler) RegisterUser(c *fiber.Ctx) error {
 	}
 
 	user, err := h.Store.CreateUser(c.Context(), arg)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not create user"})
-	}
 
 	if err != nil {
 		// Assuming db.ErrorCode(err) is used to get the specific error code
@@ -86,11 +88,6 @@ func (h *UserHandler) RegisterUser(c *fiber.Ctx) error {
 
 	rsp := newUserResponse(user)
 	return c.Status(fiber.StatusCreated).JSON(rsp)
-}
-
-type loginUserRequest struct {
-	Username string `json:"username" binding:"required,alphanum"`
-	Password string `json:"password" binding:"required,min=6"`
 }
 
 func (h *UserHandler) LoginUser(c *fiber.Ctx) error {
@@ -146,13 +143,13 @@ func (h *UserHandler) LoginUser(c *fiber.Ctx) error {
 }
 
 // GetUserProfile handles fetching user profile
-// func (h *UserHandler) GetUserProfile(c *fiber.Ctx) error {
-// 	userID := c.Locals("user_id").(int64)
+func (h *UserHandler) GetUserProfile(c *fiber.Ctx) error {
+	payload := c.Locals("authorizationPayloadKey").(*token.Payload)
 
-// 	user, err := h.Store.GetUserByID(c.Context(), userID)
-// 	if err != nil {
-// 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "user not found"})
-// 	}
+	user, err := h.Store.GetUserByUsername(c.Context(), payload.Username)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "user not found"})
+	}
 
-// 	return c.JSON(user)
-// }
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"user": user})
+}

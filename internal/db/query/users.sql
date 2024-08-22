@@ -14,6 +14,11 @@ SELECT id, username, hashed_password
 FROM users
 WHERE id = $1;
 
+-- name: GetUserByUsername :one
+SELECT id, username, hashed_password
+FROM users
+WHERE username = $1;
+
 -- name: GetUser :one
 SELECT * FROM users
 WHERE username = $1 LIMIT 1;

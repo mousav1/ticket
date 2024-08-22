@@ -12,8 +12,9 @@ services:
     depends_on:
       - db
       - migrate
-
-  db:
+  redis:
+    image: redis:7-alpine
+  postgres:
     image: postgres:15
     env_file:
       - ../app.env
