@@ -38,7 +38,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	store := db.New(pool)
+	store := db.NewStore(pool)
 
 	server, err := api.NewServer(config, store)
 	if err != nil {

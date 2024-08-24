@@ -11,7 +11,7 @@ import (
 )
 
 type UserHandler struct {
-	Store      *db.Queries
+	Store      *db.Store
 	tokenMaker token.Maker
 	Config     util.Config
 }
@@ -52,7 +52,7 @@ func newUserResponse(user db.User) userResponse {
 	}
 }
 
-func NewUserHandler(Store *db.Queries, tokenMaker token.Maker, Config util.Config) *UserHandler {
+func NewUserHandler(Store *db.Store, tokenMaker token.Maker, Config util.Config) *UserHandler {
 	return &UserHandler{
 		Store,
 		tokenMaker,

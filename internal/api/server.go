@@ -12,13 +12,13 @@ import (
 // Server serves HTTP requests for our banking service.
 type Server struct {
 	Config     util.Config
-	Store      *db.Queries
+	Store      *db.Store
 	TokenMaker token.Maker
 	App        *fiber.App
 }
 
 // NewServer creates a new HTTP server and set up routing.
-func NewServer(config util.Config, store *db.Queries) (*Server, error) {
+func NewServer(config util.Config, store *db.Store) (*Server, error) {
 	tokenMaker, err := token.NewJWTMaker(config.TOKENSECRETKEY)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)

@@ -11,7 +11,7 @@ import (
 )
 
 type TokenHandler struct {
-	Store      *db.Queries
+	Store      *db.Store
 	tokenMaker token.Maker
 	Config     util.Config
 }
@@ -25,7 +25,7 @@ type renewAccessTokenResponse struct {
 	AccessTokenExpiresAt time.Time `json:"access_token_expires_at"`
 }
 
-func NewTokenHandler(Store *db.Queries, tokenMaker token.Maker, Config util.Config) *TokenHandler {
+func NewTokenHandler(Store *db.Store, tokenMaker token.Maker, Config util.Config) *TokenHandler {
 	return &TokenHandler{
 		Store,
 		tokenMaker,

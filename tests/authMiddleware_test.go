@@ -105,7 +105,7 @@ func TestAuthMiddleware(t *testing.T) {
 	}
 }
 
-func newTestServer(t *testing.T, store *db.Queries) *api.Server {
+func newTestServer(t *testing.T, store *db.Store) *api.Server {
 
 	config := util.Config{
 		TOKENSECRETKEY: "randomsecretkeyrandomsecretkeyas",
