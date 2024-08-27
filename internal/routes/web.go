@@ -16,5 +16,6 @@ func SetupRoutes(server *api.Server) error {
 	authGroup := server.App.Group("/user", middleware.AuthMiddleware(server.TokenMaker))
 	authGroup.Get("/info", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).GetUserProfile)
 
+	authGroup.Put("/update", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).UpdateUserProfile)
 	return nil
 }

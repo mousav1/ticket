@@ -7,8 +7,6 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -103,28 +101,19 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUs
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET
-  hashed_password = COALESCE($1, hashed_password),
-  password_changed_at = COALESCE($2, password_changed_at),
-  full_name = COALESCE($3, full_name)
+  full_name = $1
 WHERE
-  username = $4
+  username = $2
 RETURNING id, username, hashed_password, full_name, password_changed_at, created_at
 `
 
 type UpdateUserParams struct {
-	HashedPassword    pgtype.Text        `json:"hashed_password"`
-	PasswordChangedAt pgtype.Timestamptz `json:"password_changed_at"`
-	FullName          pgtype.Text        `json:"full_name"`
-	Username          string             `json:"username"`
+	FullName string `json:"full_name"`
+	Username string `json:"username"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, updateUser,
-		arg.HashedPassword,
-		arg.PasswordChangedAt,
-		arg.FullName,
-		arg.Username,
-	)
+	row := q.db.QueryRow(ctx, updateUser, arg.FullName, arg.Username)
 	var i User
 	err := row.Scan(
 		&i.ID,
