@@ -1,0 +1,40 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_CONNECTION=postgres
+      - DB_USERNAME=root
+      - DB_PASSWORD=secret
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=ticket
+    depends_on:
+      - postgres
+    restart: always
+    command: [ "/app/main" ]
+  redis:
+    image: redis:7-alpine
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=ticket
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  migrate:
+    image: migrate/migrate:latest
+    entrypoint: ["/migrate", "-path", "/migrations", "-database", "postgres://root:secret@postgres:5432/ticket?sslmode=disable"]
+    # command: ["-path", "/migrations", "-database", "postgres://root:secret@postgres:5432/ticket?sslmode=disable", "up"]
+    volumes:
+      - ./internal/db/migration:/migrations
+    depends_on:
+      - postgres
+volumes:
+  postgres_data:
