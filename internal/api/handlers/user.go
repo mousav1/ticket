@@ -22,6 +22,10 @@ type CreateUserRequest struct {
 	FullName string `json:"full_name" binding:"required"`
 }
 
+type UpdateUserRequest struct {
+	FullName string `json:"full_name" binding:"required"`
+}
+
 type userResponse struct {
 	Username          string    `json:"username"`
 	FullName          string    `json:"full_name"`
@@ -152,4 +156,32 @@ func (h *UserHandler) GetUserProfile(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"user": user})
+}
+
+func (h *UserHandler) UpdateUserProfile(c *fiber.Ctx) error {
+	var req UpdateUserRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	payload := c.Locals("authorizationPayloadKey").(*token.Payload)
+
+	user, err := h.Store.GetUserByUsername(c.Context(), payload.Username)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	arg := db.UpdateUserParams{
+		Username: user.Username,
+		FullName: req.FullName,
+	}
+
+	newUser, err := h.Store.UpdateUser(c.Context(), arg)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not update user"})
+	}
+
+	rsp := newUserResponse(newUser)
+	return c.Status(fiber.StatusCreated).JSON(rsp)
 }
