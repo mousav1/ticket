@@ -12,6 +12,7 @@ func SetupRoutes(server *api.Server) error {
 	server.App.Post("/login", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).LoginUser)
 	server.App.Post("/tokens/renew_access", handlers.NewTokenHandler(server.Store, server.TokenMaker, server.Config).RenewAccessToken)
 	server.App.Get("/cities", handlers.NewCityHandler(server.Store, server.TokenMaker, server.Config).ListCities)
+	server.App.Get("/terminals", handlers.NewTerminalHandler(server.Store, server.TokenMaker, server.Config).ListTerminals)
 
 	// Grouped routes that require authentication
 	authGroup := server.App.Group("/user", middleware.AuthMiddleware(server.TokenMaker))

@@ -69,3 +69,35 @@ func (q *Queries) GetTerminalsByCity(ctx context.Context, cityID pgtype.Int4) ([
 	}
 	return items, nil
 }
+
+const listTerminals = `-- name: ListTerminals :many
+SELECT id, name, city_id
+FROM terminals
+ORDER BY name
+`
+
+type ListTerminalsRow struct {
+	ID     int32       `json:"id"`
+	Name   string      `json:"name"`
+	CityID pgtype.Int4 `json:"city_id"`
+}
+
+func (q *Queries) ListTerminals(ctx context.Context) ([]ListTerminalsRow, error) {
+	rows, err := q.db.Query(ctx, listTerminals)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTerminalsRow{}
+	for rows.Next() {
+		var i ListTerminalsRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.CityID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

@@ -44,6 +44,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, error)
 	GetUserByUsername(ctx context.Context, username string) (GetUserByUsernameRow, error)
 	GetUserTickets(ctx context.Context, userID pgtype.Int4) ([]GetUserTicketsRow, error)
+	ListTerminals(ctx context.Context) ([]ListTerminalsRow, error)
 	ReserveTicket(ctx context.Context, arg ReserveTicketParams) error
 	SearchBuses(ctx context.Context, arg SearchBusesParams) ([]Bus, error)
 	SearchBusesByCities(ctx context.Context, arg SearchBusesByCitiesParams) ([]Bus, error)

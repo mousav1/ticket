@@ -14,3 +14,8 @@ WHERE id = $1;
 SELECT id, city_id, name
 FROM terminals
 WHERE city_id = $1;
+
+-- name: ListTerminals :many
+SELECT id, name, city_id
+FROM terminals
+ORDER BY name;
