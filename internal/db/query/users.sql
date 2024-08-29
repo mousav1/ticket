@@ -31,3 +31,9 @@ WHERE
   username = $2
 RETURNING *;
 
+-- name: UpdateUserPassword :one
+UPDATE users
+SET hashed_password = $1,
+    password_changed_at = now()
+WHERE username = $2
+RETURNING *;

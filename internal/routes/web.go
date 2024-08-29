@@ -15,7 +15,8 @@ func SetupRoutes(server *api.Server) error {
 	// Grouped routes that require authentication
 	authGroup := server.App.Group("/user", middleware.AuthMiddleware(server.TokenMaker))
 	authGroup.Get("/info", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).GetUserProfile)
-
 	authGroup.Put("/update", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).UpdateUserProfile)
+	authGroup.Post("/password_change", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).ChangePassword)
+
 	return nil
 }

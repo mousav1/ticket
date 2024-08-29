@@ -26,6 +26,10 @@ type UpdateUserRequest struct {
 	FullName string `json:"full_name" binding:"required"`
 }
 
+type UpdatePasswordRequest struct {
+	Password string `json:"password" binding:"required,min=6"`
+}
+
 type userResponse struct {
 	Username          string    `json:"username"`
 	FullName          string    `json:"full_name"`
@@ -143,7 +147,7 @@ func (h *UserHandler) LoginUser(c *fiber.Ctx) error {
 		User:                  newUserResponse(user),
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"response": rsp})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"response": rsp})
 }
 
 // GetUserProfile handles fetching user profile
@@ -155,7 +159,7 @@ func (h *UserHandler) GetUserProfile(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "user not found"})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"user": user})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"user": user})
 }
 
 func (h *UserHandler) UpdateUserProfile(c *fiber.Ctx) error {
@@ -183,5 +187,38 @@ func (h *UserHandler) UpdateUserProfile(c *fiber.Ctx) error {
 	}
 
 	rsp := newUserResponse(newUser)
-	return c.Status(fiber.StatusCreated).JSON(rsp)
+	return c.Status(fiber.StatusOK).JSON(rsp)
+}
+
+func (h *UserHandler) ChangePassword(c *fiber.Ctx) error {
+	var req UpdatePasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	hashedPassword, err := util.HashPassword(req.Password)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not hash password"})
+	}
+
+	payload := c.Locals("authorizationPayloadKey").(*token.Payload)
+
+	user, err := h.Store.GetUserByUsername(c.Context(), payload.Username)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	arg := db.UpdateUserPasswordParams{
+		HashedPassword: hashedPassword,
+		Username:       user.Username,
+	}
+
+	newUser, err := h.Store.UpdateUserPassword(c.Context(), arg)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not update password"})
+	}
+
+	rsp := newUserResponse(newUser)
+	return c.Status(fiber.StatusOK).JSON(rsp)
 }

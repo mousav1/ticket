@@ -48,6 +48,7 @@ type Querier interface {
 	SearchBuses(ctx context.Context, arg SearchBusesParams) ([]Bus, error)
 	SearchBusesByCities(ctx context.Context, arg SearchBusesByCitiesParams) ([]Bus, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)
