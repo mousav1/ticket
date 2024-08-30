@@ -7,8 +7,6 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createTerminal = `-- name: CreateTerminal :one
@@ -19,8 +17,8 @@ RETURNING id, city_id, name
 `
 
 type CreateTerminalParams struct {
-	CityID pgtype.Int4 `json:"city_id"`
-	Name   string      `json:"name"`
+	CityID int32  `json:"city_id"`
+	Name   string `json:"name"`
 }
 
 // terminals.sql
@@ -50,7 +48,7 @@ FROM terminals
 WHERE city_id = $1
 `
 
-func (q *Queries) GetTerminalsByCity(ctx context.Context, cityID pgtype.Int4) ([]Terminal, error) {
+func (q *Queries) GetTerminalsByCity(ctx context.Context, cityID int32) ([]Terminal, error) {
 	rows, err := q.db.Query(ctx, getTerminalsByCity, cityID)
 	if err != nil {
 		return nil, err
@@ -77,9 +75,9 @@ ORDER BY name
 `
 
 type ListTerminalsRow struct {
-	ID     int32       `json:"id"`
-	Name   string      `json:"name"`
-	CityID pgtype.Int4 `json:"city_id"`
+	ID     int32  `json:"id"`
+	Name   string `json:"name"`
+	CityID int32  `json:"city_id"`
 }
 
 func (q *Queries) ListTerminals(ctx context.Context) ([]ListTerminalsRow, error) {

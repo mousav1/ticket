@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -19,8 +20,8 @@ RETURNING id, origin_terminal_id, destination_terminal_id, duration, distance
 `
 
 type CreateRouteParams struct {
-	OriginTerminalID      pgtype.Int4     `json:"origin_terminal_id"`
-	DestinationTerminalID pgtype.Int4     `json:"destination_terminal_id"`
+	OriginTerminalID      int32           `json:"origin_terminal_id"`
+	DestinationTerminalID int32           `json:"destination_terminal_id"`
 	Duration              pgtype.Interval `json:"duration"`
 	Distance              int32           `json:"distance"`
 }
@@ -49,7 +50,6 @@ SELECT id, origin_terminal_id, destination_terminal_id, duration, distance
 FROM routes
 `
 
-// پیدا کردن تمامی مسیرها
 func (q *Queries) GetAllRoutes(ctx context.Context) ([]Route, error) {
 	rows, err := q.db.Query(ctx, getAllRoutes)
 	if err != nil {
@@ -83,11 +83,10 @@ WHERE origin_terminal_id = $1 AND destination_terminal_id = $2
 `
 
 type GetRouteByTerminalsParams struct {
-	OriginTerminalID      pgtype.Int4 `json:"origin_terminal_id"`
-	DestinationTerminalID pgtype.Int4 `json:"destination_terminal_id"`
+	OriginTerminalID      int32 `json:"origin_terminal_id"`
+	DestinationTerminalID int32 `json:"destination_terminal_id"`
 }
 
-// پیدا کردن یک مسیر بر اساس مبدا و مقصد
 func (q *Queries) GetRouteByTerminals(ctx context.Context, arg GetRouteByTerminalsParams) (Route, error) {
 	row := q.db.QueryRow(ctx, getRouteByTerminals, arg.OriginTerminalID, arg.DestinationTerminalID)
 	var i Route
@@ -99,4 +98,98 @@ func (q *Queries) GetRouteByTerminals(ctx context.Context, arg GetRouteByTermina
 		&i.Distance,
 	)
 	return i, err
+}
+
+const listRoutes = `-- name: ListRoutes :many
+SELECT 
+    r.id AS route_id,
+    r.origin_terminal_id,
+    r.destination_terminal_id,
+    t1.name AS origin_terminal_name,
+    t2.name AS destination_terminal_name,
+    b.id AS bus_id,
+    b.departure_time,
+    b.arrival_time,
+    b.capacity,
+    b.price,
+    b.bus_type,
+    b.corporation,
+    b.super_corporation,
+    b.service_number,
+    b.is_vip,
+    COUNT(bs.id) FILTER (WHERE bs.status = 0) AS available_seats
+FROM 
+    routes r
+    JOIN terminals t1 ON r.origin_terminal_id = t1.id
+    JOIN terminals t2 ON r.destination_terminal_id = t2.id
+    JOIN buses b ON b.route_id = r.id
+    LEFT JOIN bus_seats bs ON bs.bus_id = b.id
+WHERE 
+    r.origin_terminal_id = $1
+    AND r.destination_terminal_id = $2
+    AND b.departure_time::date = $3
+GROUP BY 
+    r.id, t1.name, t2.name, b.id
+`
+
+type ListRoutesParams struct {
+	OriginTerminalID      int32     `json:"origin_terminal_id"`
+	DestinationTerminalID int32     `json:"destination_terminal_id"`
+	DepartureTime         time.Time `json:"departure_time"`
+}
+
+type ListRoutesRow struct {
+	RouteID                 int32       `json:"route_id"`
+	OriginTerminalID        int32       `json:"origin_terminal_id"`
+	DestinationTerminalID   int32       `json:"destination_terminal_id"`
+	OriginTerminalName      string      `json:"origin_terminal_name"`
+	DestinationTerminalName string      `json:"destination_terminal_name"`
+	BusID                   int32       `json:"bus_id"`
+	DepartureTime           time.Time   `json:"departure_time"`
+	ArrivalTime             time.Time   `json:"arrival_time"`
+	Capacity                int32       `json:"capacity"`
+	Price                   int32       `json:"price"`
+	BusType                 string      `json:"bus_type"`
+	Corporation             pgtype.Text `json:"corporation"`
+	SuperCorporation        pgtype.Text `json:"super_corporation"`
+	ServiceNumber           pgtype.Text `json:"service_number"`
+	IsVip                   pgtype.Bool `json:"is_vip"`
+	AvailableSeats          int64       `json:"available_seats"`
+}
+
+func (q *Queries) ListRoutes(ctx context.Context, arg ListRoutesParams) ([]ListRoutesRow, error) {
+	rows, err := q.db.Query(ctx, listRoutes, arg.OriginTerminalID, arg.DestinationTerminalID, arg.DepartureTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRoutesRow{}
+	for rows.Next() {
+		var i ListRoutesRow
+		if err := rows.Scan(
+			&i.RouteID,
+			&i.OriginTerminalID,
+			&i.DestinationTerminalID,
+			&i.OriginTerminalName,
+			&i.DestinationTerminalName,
+			&i.BusID,
+			&i.DepartureTime,
+			&i.ArrivalTime,
+			&i.Capacity,
+			&i.Price,
+			&i.BusType,
+			&i.Corporation,
+			&i.SuperCorporation,
+			&i.ServiceNumber,
+			&i.IsVip,
+			&i.AvailableSeats,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

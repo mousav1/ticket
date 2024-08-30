@@ -20,7 +20,7 @@ RETURNING id, route_id, departure_time, arrival_time, capacity, price, bus_type,
 `
 
 type CreateBusParams struct {
-	RouteID          pgtype.Int4 `json:"route_id"`
+	RouteID          int32       `json:"route_id"`
 	DepartureTime    time.Time   `json:"departure_time"`
 	ArrivalTime      time.Time   `json:"arrival_time"`
 	Capacity         int32       `json:"capacity"`
@@ -70,7 +70,7 @@ RETURNING id, bus_id, seat_number, status, passenger_national_code
 `
 
 type CreateBusSeatParams struct {
-	BusID                 pgtype.Int4 `json:"bus_id"`
+	BusID                 int32       `json:"bus_id"`
 	SeatNumber            int32       `json:"seat_number"`
 	Status                int32       `json:"status"`
 	PassengerNationalCode pgtype.Text `json:"passenger_national_code"`
@@ -125,7 +125,7 @@ FROM bus_seats
 WHERE bus_id = $1
 `
 
-func (q *Queries) GetBusSeats(ctx context.Context, busID pgtype.Int4) ([]BusSeat, error) {
+func (q *Queries) GetBusSeats(ctx context.Context, busID int32) ([]BusSeat, error) {
 	rows, err := q.db.Query(ctx, getBusSeats, busID)
 	if err != nil {
 		return nil, err
@@ -159,9 +159,9 @@ WHERE r.origin_terminal_id = $1 AND r.destination_terminal_id = $2 AND b.departu
 `
 
 type SearchBusesParams struct {
-	OriginTerminalID      pgtype.Int4 `json:"origin_terminal_id"`
-	DestinationTerminalID pgtype.Int4 `json:"destination_terminal_id"`
-	DepartureTime         time.Time   `json:"departure_time"`
+	OriginTerminalID      int32     `json:"origin_terminal_id"`
+	DestinationTerminalID int32     `json:"destination_terminal_id"`
+	DepartureTime         time.Time `json:"departure_time"`
 }
 
 func (q *Queries) SearchBuses(ctx context.Context, arg SearchBusesParams) ([]Bus, error) {
@@ -206,9 +206,9 @@ WHERE t_origin.city_id = $1 AND t_destination.city_id = $2 AND b.departure_time 
 `
 
 type SearchBusesByCitiesParams struct {
-	CityID        pgtype.Int4 `json:"city_id"`
-	CityID_2      pgtype.Int4 `json:"city_id_2"`
-	DepartureTime time.Time   `json:"departure_time"`
+	CityID        int32     `json:"city_id"`
+	CityID_2      int32     `json:"city_id_2"`
+	DepartureTime time.Time `json:"departure_time"`
 }
 
 func (q *Queries) SearchBusesByCities(ctx context.Context, arg SearchBusesByCitiesParams) ([]Bus, error) {

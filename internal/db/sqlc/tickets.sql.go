@@ -19,7 +19,7 @@ RETURNING id, bus_id, actual_hours_before, hours_before, percent, custom_text
 `
 
 type CreatePenaltyParams struct {
-	BusID             pgtype.Int4   `json:"bus_id"`
+	BusID             int32         `json:"bus_id"`
 	ActualHoursBefore pgtype.Float8 `json:"actual_hours_before"`
 	HoursBefore       pgtype.Float8 `json:"hours_before"`
 	Percent           int32         `json:"percent"`
@@ -62,7 +62,7 @@ FROM penalties
 WHERE bus_id = $1
 `
 
-func (q *Queries) GetBusPenalties(ctx context.Context, busID pgtype.Int4) ([]Penalty, error) {
+func (q *Queries) GetBusPenalties(ctx context.Context, busID int32) ([]Penalty, error) {
 	rows, err := q.db.Query(ctx, getBusPenalties, busID)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ FROM tickets
 WHERE bus_id = $1
 `
 
-func (q *Queries) GetReservedTicketsCount(ctx context.Context, busID pgtype.Int4) (int64, error) {
+func (q *Queries) GetReservedTicketsCount(ctx context.Context, busID int32) (int64, error) {
 	row := q.db.QueryRow(ctx, getReservedTicketsCount, busID)
 	var count int64
 	err := row.Scan(&count)
@@ -110,8 +110,8 @@ WHERE id = $1
 
 type GetTicketByIDRow struct {
 	ID         int32              `json:"id"`
-	UserID     pgtype.Int4        `json:"user_id"`
-	BusID      pgtype.Int4        `json:"bus_id"`
+	UserID     int32              `json:"user_id"`
+	BusID      int32              `json:"bus_id"`
 	ReservedAt pgtype.Timestamptz `json:"reserved_at"`
 }
 
@@ -136,7 +136,7 @@ WHERE t.user_id = $1
 
 type GetUserTicketsRow struct {
 	ID               int32       `json:"id"`
-	RouteID          pgtype.Int4 `json:"route_id"`
+	RouteID          int32       `json:"route_id"`
 	DepartureTime    time.Time   `json:"departure_time"`
 	ArrivalTime      time.Time   `json:"arrival_time"`
 	Capacity         int32       `json:"capacity"`
@@ -148,7 +148,7 @@ type GetUserTicketsRow struct {
 	IsVip            pgtype.Bool `json:"is_vip"`
 }
 
-func (q *Queries) GetUserTickets(ctx context.Context, userID pgtype.Int4) ([]GetUserTicketsRow, error) {
+func (q *Queries) GetUserTickets(ctx context.Context, userID int32) ([]GetUserTicketsRow, error) {
 	rows, err := q.db.Query(ctx, getUserTickets, userID)
 	if err != nil {
 		return nil, err
@@ -187,9 +187,9 @@ ON CONFLICT (user_id, bus_id, seat_id) DO NOTHING
 `
 
 type ReserveTicketParams struct {
-	UserID pgtype.Int4 `json:"user_id"`
-	BusID  pgtype.Int4 `json:"bus_id"`
-	SeatID pgtype.Int4 `json:"seat_id"`
+	UserID int32 `json:"user_id"`
+	BusID  int32 `json:"bus_id"`
+	SeatID int32 `json:"seat_id"`
 }
 
 func (q *Queries) ReserveTicket(ctx context.Context, arg ReserveTicketParams) error {

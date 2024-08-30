@@ -3,6 +3,7 @@ module github.com/mousv1/ticket
 go 1.23.0
 
 require (
+	github.com/go-playground/validator/v10 v10.22.0
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/lib/pq v1.10.9
@@ -47,7 +48,6 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
-	github.com/go-playground/validator/v10 v10.22.0
 	github.com/golang-migrate/migrate/v4 v4.17.1
 	github.com/google/uuid v1.5.0
 	github.com/jackc/pgx/v5 v5.6.0

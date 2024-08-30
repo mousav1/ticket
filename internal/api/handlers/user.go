@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"net/http"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	db "github.com/mousv1/ticket/internal/db/sqlc"
@@ -60,6 +62,8 @@ func newUserResponse(user db.User) userResponse {
 	}
 }
 
+var validate = validator.New()
+
 func NewUserHandler(Store *db.Store, tokenMaker token.Maker, Config util.Config) *UserHandler {
 	return &UserHandler{
 		Store,
@@ -73,6 +77,12 @@ func (h *UserHandler) RegisterUser(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
+
+	// Validate query parameters
+	if err := validate.Struct(&req); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
 	hashedPassword, err := util.HashPassword(req.Password)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not hash password"})
@@ -102,6 +112,10 @@ func (h *UserHandler) LoginUser(c *fiber.Ctx) error {
 	var req loginUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if err := validate.Struct(&req); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	user, err := h.Store.GetUser(c.Context(), req.Username)
@@ -168,6 +182,10 @@ func (h *UserHandler) UpdateUserProfile(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	if err := validate.Struct(&req); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
 	payload := c.Locals("authorizationPayloadKey").(*token.Payload)
 
 	user, err := h.Store.GetUserByUsername(c.Context(), payload.Username)
@@ -194,6 +212,10 @@ func (h *UserHandler) ChangePassword(c *fiber.Ctx) error {
 	var req UpdatePasswordRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if err := validate.Struct(&req); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	hashedPassword, err := util.HashPassword(req.Password)

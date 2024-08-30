@@ -13,7 +13,7 @@ import (
 
 type Bus struct {
 	ID               int32       `json:"id"`
-	RouteID          pgtype.Int4 `json:"route_id"`
+	RouteID          int32       `json:"route_id"`
 	DepartureTime    time.Time   `json:"departure_time"`
 	ArrivalTime      time.Time   `json:"arrival_time"`
 	Capacity         int32       `json:"capacity"`
@@ -27,7 +27,7 @@ type Bus struct {
 
 type BusSeat struct {
 	ID                    int32       `json:"id"`
-	BusID                 pgtype.Int4 `json:"bus_id"`
+	BusID                 int32       `json:"bus_id"`
 	SeatNumber            int32       `json:"seat_number"`
 	Status                int32       `json:"status"`
 	PassengerNationalCode pgtype.Text `json:"passenger_national_code"`
@@ -40,7 +40,7 @@ type City struct {
 
 type Penalty struct {
 	ID                int32         `json:"id"`
-	BusID             pgtype.Int4   `json:"bus_id"`
+	BusID             int32         `json:"bus_id"`
 	ActualHoursBefore pgtype.Float8 `json:"actual_hours_before"`
 	HoursBefore       pgtype.Float8 `json:"hours_before"`
 	Percent           int32         `json:"percent"`
@@ -49,8 +49,8 @@ type Penalty struct {
 
 type Route struct {
 	ID                    int32           `json:"id"`
-	OriginTerminalID      pgtype.Int4     `json:"origin_terminal_id"`
-	DestinationTerminalID pgtype.Int4     `json:"destination_terminal_id"`
+	OriginTerminalID      int32           `json:"origin_terminal_id"`
+	DestinationTerminalID int32           `json:"destination_terminal_id"`
 	Duration              pgtype.Interval `json:"duration"`
 	Distance              int32           `json:"distance"`
 }
@@ -67,16 +67,16 @@ type Session struct {
 }
 
 type Terminal struct {
-	ID     int32       `json:"id"`
-	CityID pgtype.Int4 `json:"city_id"`
-	Name   string      `json:"name"`
+	ID     int32  `json:"id"`
+	CityID int32  `json:"city_id"`
+	Name   string `json:"name"`
 }
 
 type Ticket struct {
 	ID         int32              `json:"id"`
-	UserID     pgtype.Int4        `json:"user_id"`
-	BusID      pgtype.Int4        `json:"bus_id"`
-	SeatID     pgtype.Int4        `json:"seat_id"`
+	UserID     int32              `json:"user_id"`
+	BusID      int32              `json:"bus_id"`
+	SeatID     int32              `json:"seat_id"`
 	ReservedAt pgtype.Timestamptz `json:"reserved_at"`
 }
 
