@@ -34,6 +34,19 @@ type reserveSeatResponse struct {
 	ReservedAt time.Time `json:"reserved_at"`
 }
 
+// ListUserTicketsResponse represents the response structure for user tickets
+type ListUserTicketsResponse struct {
+	TicketID      int32     `json:"ticket_id"`
+	BusID         int32     `json:"bus_id"`
+	SeatID        int32     `json:"seat_id"`
+	ReservedAt    time.Time `json:"reserved_at"`
+	DepartureTime time.Time `json:"departure_time"`
+	ArrivalTime   time.Time `json:"arrival_time"`
+	Price         int       `json:"price"`
+	SeatNumber    int       `json:"seat_number"`
+	Status        int       `json:"status"`
+}
+
 // NewTicketHandler creates a new TicketHandler
 func NewTicketHandler(Store *db.Store, tokenMaker token.Maker, Config util.Config) *TicketHandler {
 	return &TicketHandler{
@@ -180,5 +193,42 @@ func (h *TicketHandler) PurchaseTicket(c *fiber.Ctx) error {
 		ReservedAt: result.ReservedAt,
 	}
 
+	return c.Status(http.StatusOK).JSON(response)
+}
+
+// ListUserTickets handles the request to list all tickets of a user
+func (h *TicketHandler) ListUserTickets(c *fiber.Ctx) error {
+	// Extract user info from authorization payload
+	payload := c.Locals("authorizationPayloadKey").(*token.Payload)
+
+	// Fetch user by username
+	user, err := h.store.GetUserByUsername(c.Context(), payload.Username)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	// Fetch tickets for the user
+	tickets, err := h.store.ListUserTickets(c.Context(), user.ID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch user tickets"})
+	}
+
+	// Map tickets to response format
+	var response []ListUserTicketsResponse
+	for _, ticket := range tickets {
+		response = append(response, ListUserTicketsResponse{
+			TicketID:      ticket.TicketID,
+			BusID:         ticket.BusID,
+			SeatID:        ticket.SeatID,
+			ReservedAt:    ticket.ReservedAt.Time,
+			DepartureTime: ticket.DepartureTime,
+			ArrivalTime:   ticket.ArrivalTime,
+			Price:         int(ticket.Price),
+			SeatNumber:    int(ticket.SeatNumber),
+			Status:        int(ticket.Status),
+		})
+	}
+
+	// Send the response
 	return c.Status(http.StatusOK).JSON(response)
 }

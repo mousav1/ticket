@@ -20,6 +20,7 @@ func SetupRoutes(server *api.Server) error {
 	authGroup.Get("/user/info", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).GetUserProfile)
 	authGroup.Put("/user/update", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).UpdateUserProfile)
 	authGroup.Post("/user/password_change", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).ChangePassword)
+	authGroup.Get("/user/tickets", handlers.NewTicketHandler(server.Store, server.TokenMaker, server.Config).ListUserTickets)
 	authGroup.Get("/routes/reserve", handlers.NewTicketHandler(server.Store, server.TokenMaker, server.Config).ReserveSeat)
 	authGroup.Get("/routes/purchase", handlers.NewTicketHandler(server.Store, server.TokenMaker, server.Config).PurchaseTicket)
 	return nil

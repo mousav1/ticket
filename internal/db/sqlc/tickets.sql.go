@@ -180,6 +180,71 @@ func (q *Queries) GetUserTickets(ctx context.Context, userID int32) ([]GetUserTi
 	return items, nil
 }
 
+const listUserTickets = `-- name: ListUserTickets :many
+SELECT 
+    t.id AS ticket_id,
+    t.bus_id,
+    t.seat_id,
+    t.reserved_at,
+    b.departure_time,
+    b.arrival_time,
+    b.price,
+    s.seat_number,
+    s.status
+FROM 
+    tickets t
+JOIN 
+    buses b ON t.bus_id = b.id
+JOIN 
+    bus_seats s ON t.seat_id = s.id
+WHERE 
+    t.user_id = $1
+ORDER BY 
+    t.reserved_at DESC
+`
+
+type ListUserTicketsRow struct {
+	TicketID      int32              `json:"ticket_id"`
+	BusID         int32              `json:"bus_id"`
+	SeatID        int32              `json:"seat_id"`
+	ReservedAt    pgtype.Timestamptz `json:"reserved_at"`
+	DepartureTime time.Time          `json:"departure_time"`
+	ArrivalTime   time.Time          `json:"arrival_time"`
+	Price         int32              `json:"price"`
+	SeatNumber    int32              `json:"seat_number"`
+	Status        int32              `json:"status"`
+}
+
+func (q *Queries) ListUserTickets(ctx context.Context, userID int32) ([]ListUserTicketsRow, error) {
+	rows, err := q.db.Query(ctx, listUserTickets, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUserTicketsRow{}
+	for rows.Next() {
+		var i ListUserTicketsRow
+		if err := rows.Scan(
+			&i.TicketID,
+			&i.BusID,
+			&i.SeatID,
+			&i.ReservedAt,
+			&i.DepartureTime,
+			&i.ArrivalTime,
+			&i.Price,
+			&i.SeatNumber,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const purchaseTicket = `-- name: PurchaseTicket :one
 INSERT INTO tickets (user_id, bus_id, seat_id, status, purchased_at)
 VALUES ($1, $2, $3, 'purchased', NOW())
