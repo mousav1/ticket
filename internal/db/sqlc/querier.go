@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	CheckBusRouteAssociation(ctx context.Context, arg CheckBusRouteAssociationParams) (CheckBusRouteAssociationRow, error)
 	// buses.sql
 	CreateBus(ctx context.Context, arg CreateBusParams) (Bus, error)
 	CreateBusSeat(ctx context.Context, arg CreateBusSeatParams) (BusSeat, error)
@@ -26,13 +27,14 @@ type Querier interface {
 	DeleteTicket(ctx context.Context, id int32) error
 	GetAllCities(ctx context.Context) ([]City, error)
 	GetAllRoutes(ctx context.Context) ([]Route, error)
+	GetAvailableSeatsForBus(ctx context.Context, arg GetAvailableSeatsForBusParams) ([]GetAvailableSeatsForBusRow, error)
 	GetBusByID(ctx context.Context, id int32) (Bus, error)
 	GetBusPenalties(ctx context.Context, busID int32) ([]Penalty, error)
 	GetBusSeats(ctx context.Context, busID int32) ([]BusSeat, error)
 	// cities.sql
 	GetCityByID(ctx context.Context, id int32) (City, error)
 	GetReservedTicketsCount(ctx context.Context, busID int32) (int64, error)
-	GetRouteByTerminals(ctx context.Context, arg GetRouteByTerminalsParams) (Route, error)
+	GetRouteByID(ctx context.Context, id int32) (Route, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetTerminalByID(ctx context.Context, id int32) (Terminal, error)
 	GetTerminalsByCity(ctx context.Context, cityID int32) ([]Terminal, error)
@@ -41,11 +43,13 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, error)
 	GetUserByUsername(ctx context.Context, username string) (GetUserByUsernameRow, error)
 	GetUserTickets(ctx context.Context, userID int32) ([]GetUserTicketsRow, error)
+	ListAvailableSeats(ctx context.Context, busID int32) ([]ListAvailableSeatsRow, error)
 	ListRoutes(ctx context.Context, arg ListRoutesParams) ([]ListRoutesRow, error)
 	ListTerminals(ctx context.Context) ([]ListTerminalsRow, error)
 	ReserveTicket(ctx context.Context, arg ReserveTicketParams) error
 	SearchBuses(ctx context.Context, arg SearchBusesParams) ([]Bus, error)
 	SearchBusesByCities(ctx context.Context, arg SearchBusesByCitiesParams) ([]Bus, error)
+	UpdateSeatStatus(ctx context.Context, arg UpdateSeatStatusParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error)
 }

@@ -9,6 +9,11 @@ RETURNING id, origin_terminal_id, destination_terminal_id, duration, distance;
 SELECT id, origin_terminal_id, destination_terminal_id, duration, distance
 FROM routes;
 
+-- name: GetRouteByID :one
+SELECT id, origin_terminal_id, destination_terminal_id, duration, distance
+FROM routes
+WHERE id = $1;
+
 -- name: ListRoutes :many
 SELECT 
     r.id AS route_id,

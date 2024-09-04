@@ -35,3 +35,57 @@ RETURNING id, bus_id, seat_number, status, passenger_national_code;
 SELECT id, bus_id, seat_number, status, passenger_national_code
 FROM bus_seats
 WHERE bus_id = $1;
+
+-- name: ListAvailableSeats :many
+SELECT 
+    bs.id AS seat_id,
+    bs.seat_number,
+    bs.status
+FROM 
+    bus_seats bs
+    JOIN buses b ON bs.bus_id = b.id
+WHERE 
+    bs.bus_id = $1
+    AND bs.status = 0 -- Assuming status = 0 means the seat is available
+ORDER BY 
+    bs.seat_number;
+
+
+-- name: GetAvailableSeatsForBus :many
+SELECT
+    bs.id AS seat_id,
+    bs.seat_number,
+    bs.status
+FROM
+    bus_seats bs
+    JOIN buses b ON bs.bus_id = b.id
+WHERE
+    b.route_id = $1
+    AND bs.bus_id = $2
+    AND bs.status = 0 
+ORDER BY
+    bs.seat_number;
+
+
+-- name: UpdateSeatStatus :exec
+UPDATE bus_seats
+SET 
+    status = $1,
+    passenger_national_code = $2
+WHERE 
+    id = $3;
+
+
+-- name: CheckBusRouteAssociation :one
+SELECT 
+    b.id AS bus_id,
+    r.id AS route_id
+FROM 
+    buses b
+JOIN 
+    routes r ON b.route_id = r.id
+WHERE 
+    b.id = $1  -- BusID
+    AND r.id = $2  -- RouteID
+LIMIT 1;
+

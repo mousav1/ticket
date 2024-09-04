@@ -12,6 +12,37 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkBusRouteAssociation = `-- name: CheckBusRouteAssociation :one
+SELECT 
+    b.id AS bus_id,
+    r.id AS route_id
+FROM 
+    buses b
+JOIN 
+    routes r ON b.route_id = r.id
+WHERE 
+    b.id = $1  -- BusID
+    AND r.id = $2  -- RouteID
+LIMIT 1
+`
+
+type CheckBusRouteAssociationParams struct {
+	ID   int32 `json:"id"`
+	ID_2 int32 `json:"id_2"`
+}
+
+type CheckBusRouteAssociationRow struct {
+	BusID   int32 `json:"bus_id"`
+	RouteID int32 `json:"route_id"`
+}
+
+func (q *Queries) CheckBusRouteAssociation(ctx context.Context, arg CheckBusRouteAssociationParams) (CheckBusRouteAssociationRow, error) {
+	row := q.db.QueryRow(ctx, checkBusRouteAssociation, arg.ID, arg.ID_2)
+	var i CheckBusRouteAssociationRow
+	err := row.Scan(&i.BusID, &i.RouteID)
+	return i, err
+}
+
 const createBus = `-- name: CreateBus :one
 
 INSERT INTO buses (route_id, departure_time, arrival_time, capacity, price, bus_type, corporation, super_corporation, service_number, is_vip)
@@ -94,6 +125,53 @@ func (q *Queries) CreateBusSeat(ctx context.Context, arg CreateBusSeatParams) (B
 	return i, err
 }
 
+const getAvailableSeatsForBus = `-- name: GetAvailableSeatsForBus :many
+SELECT
+    bs.id AS seat_id,
+    bs.seat_number,
+    bs.status
+FROM
+    bus_seats bs
+    JOIN buses b ON bs.bus_id = b.id
+WHERE
+    b.route_id = $1
+    AND bs.bus_id = $2
+    AND bs.status = 0 
+ORDER BY
+    bs.seat_number
+`
+
+type GetAvailableSeatsForBusParams struct {
+	RouteID int32 `json:"route_id"`
+	BusID   int32 `json:"bus_id"`
+}
+
+type GetAvailableSeatsForBusRow struct {
+	SeatID     int32 `json:"seat_id"`
+	SeatNumber int32 `json:"seat_number"`
+	Status     int32 `json:"status"`
+}
+
+func (q *Queries) GetAvailableSeatsForBus(ctx context.Context, arg GetAvailableSeatsForBusParams) ([]GetAvailableSeatsForBusRow, error) {
+	rows, err := q.db.Query(ctx, getAvailableSeatsForBus, arg.RouteID, arg.BusID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetAvailableSeatsForBusRow{}
+	for rows.Next() {
+		var i GetAvailableSeatsForBusRow
+		if err := rows.Scan(&i.SeatID, &i.SeatNumber, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getBusByID = `-- name: GetBusByID :one
 SELECT id, route_id, departure_time, arrival_time, capacity, price, bus_type, corporation, super_corporation, service_number, is_vip
 FROM buses
@@ -141,6 +219,47 @@ func (q *Queries) GetBusSeats(ctx context.Context, busID int32) ([]BusSeat, erro
 			&i.Status,
 			&i.PassengerNationalCode,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAvailableSeats = `-- name: ListAvailableSeats :many
+SELECT 
+    bs.id AS seat_id,
+    bs.seat_number,
+    bs.status
+FROM 
+    bus_seats bs
+    JOIN buses b ON bs.bus_id = b.id
+WHERE 
+    bs.bus_id = $1
+    AND bs.status = 0 -- Assuming status = 0 means the seat is available
+ORDER BY 
+    bs.seat_number
+`
+
+type ListAvailableSeatsRow struct {
+	SeatID     int32 `json:"seat_id"`
+	SeatNumber int32 `json:"seat_number"`
+	Status     int32 `json:"status"`
+}
+
+func (q *Queries) ListAvailableSeats(ctx context.Context, busID int32) ([]ListAvailableSeatsRow, error) {
+	rows, err := q.db.Query(ctx, listAvailableSeats, busID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAvailableSeatsRow{}
+	for rows.Next() {
+		var i ListAvailableSeatsRow
+		if err := rows.Scan(&i.SeatID, &i.SeatNumber, &i.Status); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -241,4 +360,24 @@ func (q *Queries) SearchBusesByCities(ctx context.Context, arg SearchBusesByCiti
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateSeatStatus = `-- name: UpdateSeatStatus :exec
+UPDATE bus_seats
+SET 
+    status = $1,
+    passenger_national_code = $2
+WHERE 
+    id = $3
+`
+
+type UpdateSeatStatusParams struct {
+	Status                int32       `json:"status"`
+	PassengerNationalCode pgtype.Text `json:"passenger_national_code"`
+	ID                    int32       `json:"id"`
+}
+
+func (q *Queries) UpdateSeatStatus(ctx context.Context, arg UpdateSeatStatusParams) error {
+	_, err := q.db.Exec(ctx, updateSeatStatus, arg.Status, arg.PassengerNationalCode, arg.ID)
+	return err
 }

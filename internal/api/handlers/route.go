@@ -31,6 +31,7 @@ type routeResponse struct {
 	DepartureTime   time.Time `json:"departure_time"`
 	ArrivalTime     time.Time `json:"arrival_time"`
 	AvailableSeats  int64     `json:"available_seats"`
+	Price           int32     `json:"price"`
 }
 
 func NewRouteHandler(store *db.Store, tokenMaker token.Maker, config util.Config) *RouteHandler {
@@ -77,6 +78,7 @@ func (h *RouteHandler) SearchRoutes(c *fiber.Ctx) error {
 			DepartureTime:   route.DepartureTime,
 			ArrivalTime:     route.ArrivalTime,
 			AvailableSeats:  route.AvailableSeats,
+			Price:           route.Price,
 		})
 	}
 

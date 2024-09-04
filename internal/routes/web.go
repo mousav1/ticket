@@ -14,7 +14,7 @@ func SetupRoutes(server *api.Server) error {
 	server.App.Get("/cities", handlers.NewCityHandler(server.Store, server.TokenMaker, server.Config).ListCities)
 	server.App.Get("/terminals", handlers.NewTerminalHandler(server.Store, server.TokenMaker, server.Config).ListTerminals)
 	server.App.Get("/routes", handlers.NewRouteHandler(server.Store, server.TokenMaker, server.Config).SearchRoutes)
-
+	server.App.Get("/routes/:route_id/buses/:bus_id/seats", handlers.NewBusHandler(server.Store, server.TokenMaker, server.Config).ListAvailableSeats)
 	// Grouped routes that require authentication
 	authGroup := server.App.Group("/user", middleware.AuthMiddleware(server.TokenMaker))
 	authGroup.Get("/info", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).GetUserProfile)

@@ -76,19 +76,14 @@ func (q *Queries) GetAllRoutes(ctx context.Context) ([]Route, error) {
 	return items, nil
 }
 
-const getRouteByTerminals = `-- name: GetRouteByTerminals :one
+const getRouteByID = `-- name: GetRouteByID :one
 SELECT id, origin_terminal_id, destination_terminal_id, duration, distance
 FROM routes
-WHERE origin_terminal_id = $1 AND destination_terminal_id = $2
+WHERE id = $1
 `
 
-type GetRouteByTerminalsParams struct {
-	OriginTerminalID      int32 `json:"origin_terminal_id"`
-	DestinationTerminalID int32 `json:"destination_terminal_id"`
-}
-
-func (q *Queries) GetRouteByTerminals(ctx context.Context, arg GetRouteByTerminalsParams) (Route, error) {
-	row := q.db.QueryRow(ctx, getRouteByTerminals, arg.OriginTerminalID, arg.DestinationTerminalID)
+func (q *Queries) GetRouteByID(ctx context.Context, id int32) (Route, error) {
+	row := q.db.QueryRow(ctx, getRouteByID, id)
 	var i Route
 	err := row.Scan(
 		&i.ID,
