@@ -19,6 +19,7 @@ The Ticket Booking System is a web application built with Go, designed to manage
 - **Authentication:** JWT (JSON Web Tokens)
 - **Docker:** For containerization and deployment
 - **golang-migrate:** Database migrations. CLI and Golang library.
+- **sqlc:** Generates Go code from SQL queries for type-safe database interactions
 
 ## 📂 Project Structure
 

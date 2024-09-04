@@ -175,3 +175,74 @@ func (h *BusHandler) ReserveSeat(c *fiber.Ctx) error {
 	// Respond with ticket information
 	return c.Status(http.StatusOK).JSON(reservation)
 }
+
+// PurchaseTicket handles the request to purchase a ticket
+func (h *BusHandler) PurchaseTicket(c *fiber.Ctx) error {
+	// Parse request body
+	var req reserveSeatRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request parameters"})
+	}
+
+	// Validate request parameters
+	validate := validator.New()
+	if err := validate.Struct(&req); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Check if the bus is associated with the route
+	_, err := h.store.CheckBusRouteAssociation(c.Context(), db.CheckBusRouteAssociationParams{
+		ID:   req.RouteID,
+		ID_2: req.BusID,
+	})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fiber.NewError(http.StatusNotFound, "Bus or Route not found or they do not match")
+		}
+		return fiber.NewError(http.StatusInternalServerError, "Failed to validate bus and route association")
+	}
+
+	// Check if the seat exists and is available
+	seat, err := h.store.GetSeatByID(c.Context(), db.GetSeatByIDParams{
+		ID:    req.SeatID,
+		BusID: req.BusID,
+	})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fiber.NewError(http.StatusNotFound, "Seat not found")
+		}
+		return fiber.NewError(http.StatusInternalServerError, "Failed to fetch seat information")
+	}
+
+	// Ensure the seat is available for purchase
+	if seat.Status != 0 && seat.Status != 1 { // Assuming 0 is available, 1 is reserved
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Seat is not available for purchase"})
+	}
+
+	// Get user from context
+	payload := c.Locals("authorizationPayloadKey").(*token.Payload)
+	user, err := h.store.GetUserByUsername(c.Context(), payload.Username)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Start the transaction to purchase the ticket
+	result, err := h.store.PurchaseTicketTx(c.Context(), db.PurchaseTicketTxParams{
+		UserID: user.ID,
+		BusID:  req.BusID,
+		SeatID: req.SeatID,
+	})
+	if err != nil {
+		return fiber.NewError(http.StatusInternalServerError, "Failed to purchase ticket")
+	}
+
+	// Respond with ticket information
+	response := reserveSeatResponse{
+		TicketID:   result.TicketID,
+		BusID:      result.BusID,
+		SeatID:     result.SeatID,
+		ReservedAt: result.ReservedAt,
+	}
+
+	return c.Status(http.StatusOK).JSON(response)
+}

@@ -16,10 +16,11 @@ func SetupRoutes(server *api.Server) error {
 	server.App.Get("/routes", handlers.NewRouteHandler(server.Store, server.TokenMaker, server.Config).SearchRoutes)
 	server.App.Get("/routes/:route_id/buses/:bus_id/seats", handlers.NewBusHandler(server.Store, server.TokenMaker, server.Config).ListAvailableSeats)
 	// Grouped routes that require authentication
-	authGroup := server.App.Group("/user", middleware.AuthMiddleware(server.TokenMaker))
-	authGroup.Get("/info", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).GetUserProfile)
-	authGroup.Put("/update", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).UpdateUserProfile)
-	authGroup.Post("/password_change", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).ChangePassword)
-
+	authGroup := server.App.Group("/", middleware.AuthMiddleware(server.TokenMaker))
+	authGroup.Get("/user/info", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).GetUserProfile)
+	authGroup.Put("/user/update", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).UpdateUserProfile)
+	authGroup.Post("/user/password_change", handlers.NewUserHandler(server.Store, server.TokenMaker, server.Config).ChangePassword)
+	authGroup.Get("/routes/reserve", handlers.NewBusHandler(server.Store, server.TokenMaker, server.Config).ReserveSeat)
+	authGroup.Get("/routes/purchase", handlers.NewBusHandler(server.Store, server.TokenMaker, server.Config).PurchaseTicket)
 	return nil
 }

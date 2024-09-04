@@ -180,6 +180,41 @@ func (q *Queries) GetUserTickets(ctx context.Context, userID int32) ([]GetUserTi
 	return items, nil
 }
 
+const purchaseTicket = `-- name: PurchaseTicket :one
+INSERT INTO tickets (user_id, bus_id, seat_id, status, purchased_at)
+VALUES ($1, $2, $3, 'purchased', NOW())
+RETURNING id, user_id, bus_id, seat_id, status, purchased_at
+`
+
+type PurchaseTicketParams struct {
+	UserID int32 `json:"user_id"`
+	BusID  int32 `json:"bus_id"`
+	SeatID int32 `json:"seat_id"`
+}
+
+type PurchaseTicketRow struct {
+	ID          int32              `json:"id"`
+	UserID      int32              `json:"user_id"`
+	BusID       int32              `json:"bus_id"`
+	SeatID      int32              `json:"seat_id"`
+	Status      string             `json:"status"`
+	PurchasedAt pgtype.Timestamptz `json:"purchased_at"`
+}
+
+func (q *Queries) PurchaseTicket(ctx context.Context, arg PurchaseTicketParams) (PurchaseTicketRow, error) {
+	row := q.db.QueryRow(ctx, purchaseTicket, arg.UserID, arg.BusID, arg.SeatID)
+	var i PurchaseTicketRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.BusID,
+		&i.SeatID,
+		&i.Status,
+		&i.PurchasedAt,
+	)
+	return i, err
+}
+
 const reserveTicket = `-- name: ReserveTicket :one
 INSERT INTO tickets (user_id, bus_id, seat_id, status, reserved_at)
 VALUES ($1, $2, $3, 'reserved', NOW())

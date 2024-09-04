@@ -47,6 +47,7 @@ type Querier interface {
 	ListAvailableSeats(ctx context.Context, busID int32) ([]ListAvailableSeatsRow, error)
 	ListRoutes(ctx context.Context, arg ListRoutesParams) ([]ListRoutesRow, error)
 	ListTerminals(ctx context.Context) ([]ListTerminalsRow, error)
+	PurchaseTicket(ctx context.Context, arg PurchaseTicketParams) (PurchaseTicketRow, error)
 	ReserveTicket(ctx context.Context, arg ReserveTicketParams) (ReserveTicketRow, error)
 	SearchBuses(ctx context.Context, arg SearchBusesParams) ([]Bus, error)
 	SearchBusesByCities(ctx context.Context, arg SearchBusesByCitiesParams) ([]Bus, error)

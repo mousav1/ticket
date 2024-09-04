@@ -32,3 +32,8 @@ WHERE bus_id = $1;
 INSERT INTO tickets (user_id, bus_id, seat_id, status, reserved_at)
 VALUES ($1, $2, $3, 'reserved', NOW())
 RETURNING id, user_id, bus_id, seat_id, status, reserved_at;
+
+-- name: PurchaseTicket :one
+INSERT INTO tickets (user_id, bus_id, seat_id, status, purchased_at)
+VALUES ($1, $2, $3, 'purchased', NOW())
+RETURNING id, user_id, bus_id, seat_id, status, purchased_at;
