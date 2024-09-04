@@ -229,6 +229,47 @@ func (q *Queries) GetBusSeats(ctx context.Context, busID int32) ([]BusSeat, erro
 	return items, nil
 }
 
+const getSeatByID = `-- name: GetSeatByID :one
+SELECT 
+    s.id AS seat_id,
+    s.bus_id,
+    s.seat_number,
+    s.status,
+    s.passenger_national_code
+FROM 
+    bus_seats s
+WHERE 
+    s.id = $1
+    AND s.bus_id = $2
+LIMIT 1
+`
+
+type GetSeatByIDParams struct {
+	ID    int32 `json:"id"`
+	BusID int32 `json:"bus_id"`
+}
+
+type GetSeatByIDRow struct {
+	SeatID                int32       `json:"seat_id"`
+	BusID                 int32       `json:"bus_id"`
+	SeatNumber            int32       `json:"seat_number"`
+	Status                int32       `json:"status"`
+	PassengerNationalCode pgtype.Text `json:"passenger_national_code"`
+}
+
+func (q *Queries) GetSeatByID(ctx context.Context, arg GetSeatByIDParams) (GetSeatByIDRow, error) {
+	row := q.db.QueryRow(ctx, getSeatByID, arg.ID, arg.BusID)
+	var i GetSeatByIDRow
+	err := row.Scan(
+		&i.SeatID,
+		&i.BusID,
+		&i.SeatNumber,
+		&i.Status,
+		&i.PassengerNationalCode,
+	)
+	return i, err
+}
+
 const listAvailableSeats = `-- name: ListAvailableSeats :many
 SELECT 
     bs.id AS seat_id,

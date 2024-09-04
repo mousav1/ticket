@@ -180,10 +180,10 @@ func (q *Queries) GetUserTickets(ctx context.Context, userID int32) ([]GetUserTi
 	return items, nil
 }
 
-const reserveTicket = `-- name: ReserveTicket :exec
-INSERT INTO tickets (user_id, bus_id, seat_id)
-VALUES ($1, $2, $3)
-ON CONFLICT (user_id, bus_id, seat_id) DO NOTHING
+const reserveTicket = `-- name: ReserveTicket :one
+INSERT INTO tickets (user_id, bus_id, seat_id, status, reserved_at)
+VALUES ($1, $2, $3, 'reserved', NOW())
+RETURNING id, user_id, bus_id, seat_id, status, reserved_at
 `
 
 type ReserveTicketParams struct {
@@ -192,7 +192,25 @@ type ReserveTicketParams struct {
 	SeatID int32 `json:"seat_id"`
 }
 
-func (q *Queries) ReserveTicket(ctx context.Context, arg ReserveTicketParams) error {
-	_, err := q.db.Exec(ctx, reserveTicket, arg.UserID, arg.BusID, arg.SeatID)
-	return err
+type ReserveTicketRow struct {
+	ID         int32              `json:"id"`
+	UserID     int32              `json:"user_id"`
+	BusID      int32              `json:"bus_id"`
+	SeatID     int32              `json:"seat_id"`
+	Status     string             `json:"status"`
+	ReservedAt pgtype.Timestamptz `json:"reserved_at"`
+}
+
+func (q *Queries) ReserveTicket(ctx context.Context, arg ReserveTicketParams) (ReserveTicketRow, error) {
+	row := q.db.QueryRow(ctx, reserveTicket, arg.UserID, arg.BusID, arg.SeatID)
+	var i ReserveTicketRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.BusID,
+		&i.SeatID,
+		&i.Status,
+		&i.ReservedAt,
+	)
+	return i, err
 }

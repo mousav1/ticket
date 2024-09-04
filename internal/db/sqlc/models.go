@@ -73,11 +73,13 @@ type Terminal struct {
 }
 
 type Ticket struct {
-	ID         int32              `json:"id"`
-	UserID     int32              `json:"user_id"`
-	BusID      int32              `json:"bus_id"`
-	SeatID     int32              `json:"seat_id"`
-	ReservedAt pgtype.Timestamptz `json:"reserved_at"`
+	ID          int32              `json:"id"`
+	UserID      int32              `json:"user_id"`
+	BusID       int32              `json:"bus_id"`
+	SeatID      int32              `json:"seat_id"`
+	Status      string             `json:"status"`
+	ReservedAt  pgtype.Timestamptz `json:"reserved_at"`
+	PurchasedAt pgtype.Timestamptz `json:"purchased_at"`
 }
 
 type User struct {

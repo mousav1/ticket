@@ -50,6 +50,19 @@ WHERE
 ORDER BY 
     bs.seat_number;
 
+-- name: GetSeatByID :one
+SELECT 
+    s.id AS seat_id,
+    s.bus_id,
+    s.seat_number,
+    s.status,
+    s.passenger_national_code
+FROM 
+    bus_seats s
+WHERE 
+    s.id = $1
+    AND s.bus_id = $2
+LIMIT 1;
 
 -- name: GetAvailableSeatsForBus :many
 SELECT
@@ -89,3 +102,16 @@ WHERE
     AND r.id = $2  -- RouteID
 LIMIT 1;
 
+
+-- CheckSeatAvailability :one
+SELECT 
+    s.id AS seat_id, 
+    s.status 
+FROM 
+    bus_seats s
+LEFT JOIN 
+    tickets t ON s.id = t.seat_id AND t.status IN ('reserved', 'purchased')
+WHERE 
+    s.id = $1 
+    AND s.bus_id = $2
+    AND t.id IS NULL;  -- Ensures no conflicting reservation or purchase exists

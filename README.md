@@ -23,17 +23,24 @@ The Ticket Booking System is a web application built with Go, designed to manage
 ## 📂 Project Structure
 
 ```plaintext
+
 ticket/
-├── cmd/             # Main application entry point
-├── config/          # Configuration files
-├── internal/        # Core application logic
-│   ├── handlers/    # HTTP request handlers
-│   ├── models/      # Database models
-│   ├── services/    # Business logic services
-├── migrations/      # Database migration files
-├── scripts/         # Utility scripts
-├── Dockerfile       # Docker configuration
-└── README.md        # Project documentation
+├── internal/                # Core application logic
+│   ├── api/                 # HTTP request handling
+│   │   ├── handlers/        # Controllers and request handlers
+│   │   ├── middleware/      # Middleware for request processing
+│   │   └── server.go        # Server initialization and configuration
+│   ├── db/                  # Database connections, migrations, and models
+│   ├── routes/              # Route definitions and management
+│   ├── token/               # JWT token generation, validation, and authentication
+│   ├── util/                # Utility functions, helpers, and shared components
+├── Dockerfile               # Docker configuration for containerizing the application
+├── docker-compose.yml       # Docker Compose configuration for orchestrating services
+├── README.md                # Project documentation, setup instructions, and usage
+├── main.go                  # Main entry point of the application
+└── app.env                  # Environment variables configuration file
+
+
 ```
 
 ## 🛠️ Installation and Setup
@@ -53,13 +60,13 @@ Create a .env file based on .env.example and configure your database credentials
 ### Run database migrations:
 
 ```bash
-go run scripts/migrate.go
+migrate -path interna/db/migration -database "postgres://username:password@localhost:5432/database_name?sslmode=disable" up
 ```
 
 ### Build and run the application:
 
 ```bash
-migrate -path interna/db/migration -database "$(DB_URL)" up
+go run main.go
 ```
 
 ### Using Docker (Optional):

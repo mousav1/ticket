@@ -57,7 +57,9 @@ CREATE TABLE tickets (
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     bus_id INT NOT NULL REFERENCES buses(id) ON DELETE CASCADE,
     seat_id INT NOT NULL REFERENCES bus_seats(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('reserved', 'purchased', 'canceled')), -- Added status column
     reserved_at TIMESTAMPTZ DEFAULT NOW(),
+    purchased_at TIMESTAMPTZ, -- Optional: to track when the reservation was turned into a purchase
     UNIQUE(user_id, bus_id, seat_id)
 );
 
