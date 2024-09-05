@@ -2,6 +2,11 @@
 
 This repository contains the final project of the Go (Golang) course available on our YouTube channel. The project demonstrates a complete Ticket Booking System built with Go, showcasing advanced features and best practices.
 
+## 📺 YouTube Channel
+
+You can follow along with the full tutorial for this project on our [YouTube channel](https://www.youtube.com/@topdemy/playlists). Don't forget to subscribe to stay updated with the latest lessons and videos!
+
+
 ## 🚀 Project Overview
 
 The Ticket Booking System is a web application built with Go, designed to manage ticket reservations. It includes features such as:
@@ -79,5 +84,3 @@ docker-compose up --build
 ## 🚀 Usage
 
 Access the application at http://localhost:8080.
-Use the admin panel to create events and manage users.
-Book tickets and explore the functionalities.
