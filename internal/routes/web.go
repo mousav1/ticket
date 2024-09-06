@@ -23,5 +23,6 @@ func SetupRoutes(server *api.Server) error {
 	authGroup.Get("/user/tickets", handlers.NewTicketHandler(server.Store, server.TokenMaker, server.Config).ListUserTickets)
 	authGroup.Get("/routes/reserve", handlers.NewTicketHandler(server.Store, server.TokenMaker, server.Config).ReserveSeat)
 	authGroup.Get("/routes/purchase", handlers.NewTicketHandler(server.Store, server.TokenMaker, server.Config).PurchaseTicket)
+	authGroup.Delete("/tickets/:id", handlers.NewTicketHandler(server.Store, server.TokenMaker, server.Config).CancelTicket)
 	return nil
 }

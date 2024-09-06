@@ -48,19 +48,28 @@ CREATE TABLE bus_seats (
     id SERIAL PRIMARY KEY,
     bus_id INT NOT NULL REFERENCES buses(id) ON DELETE CASCADE,
     seat_number INT NOT NULL CHECK (seat_number > 0),
-    status INT NOT NULL,
-    passenger_national_code VARCHAR(255)
+    status VARCHAR(20) NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'reserved', 'purchased', 'maintenance', 'broken'))
+);
+
+CREATE TABLE seat_reservations (
+    id SERIAL PRIMARY KEY,
+    bus_id INT NOT NULL REFERENCES buses(id) ON DELETE CASCADE,
+    bus_seat_id INT NOT NULL REFERENCES bus_seats(id) ON DELETE CASCADE,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('reserved', 'purchased', 'canceled')),
+    reserved_at TIMESTAMPTZ DEFAULT NOW(),
+    purchased_at TIMESTAMPTZ -- Optional: to track when the reservation was turned into a purchase
 );
 
 CREATE TABLE tickets (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     bus_id INT NOT NULL REFERENCES buses(id) ON DELETE CASCADE,
-    seat_id INT NOT NULL REFERENCES bus_seats(id) ON DELETE CASCADE,
-    status VARCHAR(20) NOT NULL CHECK (status IN ('reserved', 'purchased', 'canceled')), -- Added status column
+    seat_reservation_id INT NOT NULL REFERENCES seat_reservations(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('reserved', 'purchased', 'canceled')),
     reserved_at TIMESTAMPTZ DEFAULT NOW(),
     purchased_at TIMESTAMPTZ, -- Optional: to track when the reservation was turned into a purchase
-    UNIQUE(user_id, bus_id, seat_id)
+    UNIQUE(user_id, bus_id, seat_reservation_id)
 );
 
 CREATE TABLE penalties (
@@ -86,6 +95,6 @@ CREATE TABLE sessions (
 
 CREATE INDEX idx_routes_origin_destination ON routes (origin_terminal_id, destination_terminal_id);
 CREATE INDEX idx_buses_departure_time ON buses (departure_time);
-CREATE INDEX idx_bus_seats_status ON bus_seats (status);
+-- CREATE INDEX idx_bus_seats_status ON bus_seats (status);
 CREATE INDEX idx_tickets_reserved_at ON tickets (reserved_at);
 CREATE INDEX idx_sessions_username ON sessions (username);

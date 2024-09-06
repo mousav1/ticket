@@ -27,41 +27,30 @@ WHERE id = $1;
 
 
 -- name: CreateBusSeat :one
-INSERT INTO bus_seats (bus_id, seat_number, status, passenger_national_code)
-VALUES ($1, $2, $3, $4)
-RETURNING id, bus_id, seat_number, status, passenger_national_code;
+INSERT INTO bus_seats (bus_id, seat_number, status)
+VALUES ($1, $2, 'available')
+RETURNING id, bus_id, seat_number, status;
 
 -- name: GetBusSeats :many
-SELECT id, bus_id, seat_number, status, passenger_national_code
+SELECT id, bus_id, seat_number, status
 FROM bus_seats
 WHERE bus_id = $1;
 
--- name: ListAvailableSeats :many
-SELECT 
-    bs.id AS seat_id,
-    bs.seat_number,
-    bs.status
-FROM 
-    bus_seats bs
-    JOIN buses b ON bs.bus_id = b.id
-WHERE 
-    bs.bus_id = $1
-    AND bs.status = 0 -- Assuming status = 0 means the seat is available
-ORDER BY 
-    bs.seat_number;
-
 -- name: GetSeatByID :one
 SELECT 
-    s.id AS seat_id,
-    s.bus_id,
-    s.seat_number,
-    s.status,
-    s.passenger_national_code
+    bs.id AS seat_id,                
+    bs.bus_id,                  
+    bs.seat_number, 
+    bs.status AS seat_status,              
+    sr.status AS reservation_status,
+    sr.user_id
 FROM 
-    bus_seats s
+    bus_seats bs
+LEFT JOIN 
+    seat_reservations sr ON bs.id = sr.bus_seat_id
 WHERE 
-    s.id = $1
-    AND s.bus_id = $2
+    bs.id = $1
+    AND bs.bus_id = $2 
 LIMIT 1;
 
 -- name: GetAvailableSeatsForBus :many
@@ -71,22 +60,24 @@ SELECT
     bs.status
 FROM
     bus_seats bs
-    JOIN buses b ON bs.bus_id = b.id
+JOIN 
+    buses b ON bs.bus_id = b.id
 WHERE
     b.route_id = $1
     AND bs.bus_id = $2
-    AND bs.status = 0 
+    AND bs.status = 'available' -- Only select seats that are available
 ORDER BY
     bs.seat_number;
 
 
--- name: UpdateSeatStatus :exec
-UPDATE bus_seats
+
+-- name: UpdateSeatReservationStatus :exec
+UPDATE seat_reservations
 SET 
-    status = $1,
-    passenger_national_code = $2
+    status = $1
 WHERE 
-    id = $3;
+    bus_seat_id = $2
+    AND user_id = $3;
 
 
 -- name: CheckBusRouteAssociation :one
@@ -102,16 +93,23 @@ WHERE
     AND r.id = $2  -- RouteID
 LIMIT 1;
 
-
--- CheckSeatAvailability :one
+-- name: CheckSeatAvailability :one
 SELECT 
     s.id AS seat_id, 
     s.status 
 FROM 
     bus_seats s
 LEFT JOIN 
-    tickets t ON s.id = t.seat_id AND t.status IN ('reserved', 'purchased')
+    seat_reservations sr ON s.id = sr.bus_seat_id AND sr.status IN ('reserved', 'purchased')
 WHERE 
     s.id = $1 
     AND s.bus_id = $2
-    AND t.id IS NULL;  -- Ensures no conflicting reservation or purchase exists
+    AND s.status = 'available' -- Ensures seat is available
+    AND sr.id IS NULL;  -- Ensures no conflicting reservation or purchase exists
+
+
+-- name: UpdateSeatStatusAfterTrip :exec
+UPDATE bus_seats
+SET status = 'available'
+WHERE bus_id = $1
+  AND status = 'purchased';

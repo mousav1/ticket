@@ -112,7 +112,10 @@ SELECT
     b.super_corporation,
     b.service_number,
     b.is_vip,
-    COUNT(bs.id) FILTER (WHERE bs.status = 0) AS available_seats
+    -- Calculate available seats by counting seats in 'available' status
+    COUNT(bs.id) FILTER (
+        WHERE bs.status = 'available'
+    ) AS available_seats
 FROM 
     routes r
     JOIN terminals t1 ON r.origin_terminal_id = t1.id

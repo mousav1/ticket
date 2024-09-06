@@ -26,11 +26,10 @@ type Bus struct {
 }
 
 type BusSeat struct {
-	ID                    int32       `json:"id"`
-	BusID                 int32       `json:"bus_id"`
-	SeatNumber            int32       `json:"seat_number"`
-	Status                int32       `json:"status"`
-	PassengerNationalCode pgtype.Text `json:"passenger_national_code"`
+	ID         int32  `json:"id"`
+	BusID      int32  `json:"bus_id"`
+	SeatNumber int32  `json:"seat_number"`
+	Status     string `json:"status"`
 }
 
 type City struct {
@@ -55,6 +54,16 @@ type Route struct {
 	Distance              int32           `json:"distance"`
 }
 
+type SeatReservation struct {
+	ID          int32              `json:"id"`
+	BusID       int32              `json:"bus_id"`
+	BusSeatID   int32              `json:"bus_seat_id"`
+	UserID      int32              `json:"user_id"`
+	Status      string             `json:"status"`
+	ReservedAt  pgtype.Timestamptz `json:"reserved_at"`
+	PurchasedAt pgtype.Timestamptz `json:"purchased_at"`
+}
+
 type Session struct {
 	ID           uuid.UUID `json:"id"`
 	Username     string    `json:"username"`
@@ -73,13 +82,13 @@ type Terminal struct {
 }
 
 type Ticket struct {
-	ID          int32              `json:"id"`
-	UserID      int32              `json:"user_id"`
-	BusID       int32              `json:"bus_id"`
-	SeatID      int32              `json:"seat_id"`
-	Status      string             `json:"status"`
-	ReservedAt  pgtype.Timestamptz `json:"reserved_at"`
-	PurchasedAt pgtype.Timestamptz `json:"purchased_at"`
+	ID                int32              `json:"id"`
+	UserID            int32              `json:"user_id"`
+	BusID             int32              `json:"bus_id"`
+	SeatReservationID int32              `json:"seat_reservation_id"`
+	Status            string             `json:"status"`
+	ReservedAt        pgtype.Timestamptz `json:"reserved_at"`
+	PurchasedAt       pgtype.Timestamptz `json:"purchased_at"`
 }
 
 type User struct {

@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -44,7 +45,7 @@ type ListUserTicketsResponse struct {
 	ArrivalTime   time.Time `json:"arrival_time"`
 	Price         int       `json:"price"`
 	SeatNumber    int       `json:"seat_number"`
-	Status        int       `json:"status"`
+	Status        string    `json:"status"`
 }
 
 // NewTicketHandler creates a new TicketHandler
@@ -83,7 +84,7 @@ func (h *TicketHandler) ReserveSeat(c *fiber.Ctx) error {
 	}
 
 	// Check if the seat exists and is available
-	seat, err := h.store.GetSeatByID(c.Context(), db.GetSeatByIDParams{
+	seat, err := h.store.CheckSeatAvailability(c.Context(), db.CheckSeatAvailabilityParams{
 		ID:    req.SeatID,
 		BusID: req.BusID,
 	})
@@ -94,14 +95,9 @@ func (h *TicketHandler) ReserveSeat(c *fiber.Ctx) error {
 		return fiber.NewError(http.StatusInternalServerError, "Failed to fetch seat information")
 	}
 
-	// Ensure the seat belongs to the bus
-	if seat.BusID != req.BusID {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Seat does not belong to the specified bus"})
-	}
-
-	// Ensure the seat is available
-	if seat.Status != 0 { // Assuming 0 means available
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Seat is not available"})
+	// Ensure the seat is available for purchase
+	if seat.Status != "available" {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Seat is not available for purchase"})
 	}
 
 	payload := c.Locals("authorizationPayloadKey").(*token.Payload)
@@ -152,7 +148,7 @@ func (h *TicketHandler) PurchaseTicket(c *fiber.Ctx) error {
 	}
 
 	// Check if the seat exists and is available
-	seat, err := h.store.GetSeatByID(c.Context(), db.GetSeatByIDParams{
+	seat, err := h.store.CheckSeatAvailability(c.Context(), db.CheckSeatAvailabilityParams{
 		ID:    req.SeatID,
 		BusID: req.BusID,
 	})
@@ -164,7 +160,7 @@ func (h *TicketHandler) PurchaseTicket(c *fiber.Ctx) error {
 	}
 
 	// Ensure the seat is available for purchase
-	if seat.Status != 0 && seat.Status != 1 { // Assuming 0 is available, 1 is reserved
+	if seat.Status != "available" {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Seat is not available for purchase"})
 	}
 
@@ -225,10 +221,58 @@ func (h *TicketHandler) ListUserTickets(c *fiber.Ctx) error {
 			ArrivalTime:   ticket.ArrivalTime,
 			Price:         int(ticket.Price),
 			SeatNumber:    int(ticket.SeatNumber),
-			Status:        int(ticket.Status),
+			Status:        ticket.ReservationStatus,
 		})
 	}
 
 	// Send the response
 	return c.Status(http.StatusOK).JSON(response)
+}
+
+// CancelTicket handles the request to cancel a ticket
+func (h *TicketHandler) CancelTicket(c *fiber.Ctx) error {
+	// Parse ticket ID from URL parameters
+	ticketID, err := strconv.Atoi(c.Params("id"))
+	if err != nil || ticketID <= 0 {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid ticket ID"})
+	}
+
+	// Extract user information from token payload
+	payload := c.Locals("authorizationPayloadKey").(*token.Payload)
+	user, err := h.store.GetUserByUsername(c.Context(), payload.Username)
+	if err != nil {
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	// Retrieve the ticket details
+	ticket, err := h.store.GetTicketByID(c.Context(), int32(ticketID))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Ticket not found"})
+		}
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch ticket details"})
+	}
+
+	// Check if the ticket belongs to the current user
+	if ticket.UserID != user.ID {
+		return c.Status(http.StatusForbidden).JSON(fiber.Map{"error": "You do not have permission to cancel this ticket"})
+	}
+
+	// Check if the ticket is already canceled or non-cancelable
+	if ticket.Status != "canceled" {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Ticket cannot be canceled"})
+	}
+
+	// Start a transaction to cancel the ticket
+	err = h.store.CancelTicketTx(c.Context(), db.CancelTicketParams{
+		TicketID: ticket.ID,
+		SeatID:   ticket.SeatReservationID,
+		UserID:   user.ID,
+	})
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to cancel ticket"})
+	}
+
+	// Respond with success message
+	return c.Status(http.StatusOK).JSON(fiber.Map{"message": "Ticket canceled successfully"})
 }

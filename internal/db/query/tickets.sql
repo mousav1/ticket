@@ -1,5 +1,5 @@
 -- name: GetTicketByID :one
-SELECT id, user_id, bus_id, reserved_at
+SELECT id, user_id, bus_id, reserved_at, status, seat_reservation_id
 FROM tickets
 WHERE id = $1;
 
@@ -29,33 +29,40 @@ FROM penalties
 WHERE bus_id = $1;
 
 -- name: ReserveTicket :one
-INSERT INTO tickets (user_id, bus_id, seat_id, status, reserved_at)
+INSERT INTO tickets (user_id, bus_id, seat_reservation_id, status, reserved_at)
 VALUES ($1, $2, $3, 'reserved', NOW())
-RETURNING id, user_id, bus_id, seat_id, status, reserved_at;
+RETURNING id, user_id, bus_id, seat_reservation_id, status, reserved_at;
 
 -- name: PurchaseTicket :one
-INSERT INTO tickets (user_id, bus_id, seat_id, status, purchased_at)
+INSERT INTO tickets (user_id, bus_id, seat_reservation_id, status, purchased_at)
 VALUES ($1, $2, $3, 'purchased', NOW())
-RETURNING id, user_id, bus_id, seat_id, status, purchased_at;
+RETURNING id, user_id, bus_id, seat_reservation_id, status, purchased_at;
 
 -- name: ListUserTickets :many
 SELECT 
     t.id AS ticket_id,
     t.bus_id,
-    t.seat_id,
+    sr.bus_seat_id AS seat_id,
     t.reserved_at,
     b.departure_time,
     b.arrival_time,
     b.price,
     s.seat_number,
-    s.status
+    sr.status AS reservation_status
 FROM 
     tickets t
 JOIN 
     buses b ON t.bus_id = b.id
 JOIN 
-    bus_seats s ON t.seat_id = s.id
+    seat_reservations sr ON t.seat_reservation_id = sr.id
+JOIN 
+    bus_seats s ON sr.bus_seat_id = s.id
 WHERE 
     t.user_id = $1
 ORDER BY 
     t.reserved_at DESC;
+
+-- name: UpdateTicketStatus :exec
+UPDATE tickets
+SET status = $2
+WHERE id = $1;

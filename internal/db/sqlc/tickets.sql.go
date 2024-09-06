@@ -103,16 +103,18 @@ func (q *Queries) GetReservedTicketsCount(ctx context.Context, busID int32) (int
 }
 
 const getTicketByID = `-- name: GetTicketByID :one
-SELECT id, user_id, bus_id, reserved_at
+SELECT id, user_id, bus_id, reserved_at, status, seat_reservation_id
 FROM tickets
 WHERE id = $1
 `
 
 type GetTicketByIDRow struct {
-	ID         int32              `json:"id"`
-	UserID     int32              `json:"user_id"`
-	BusID      int32              `json:"bus_id"`
-	ReservedAt pgtype.Timestamptz `json:"reserved_at"`
+	ID                int32              `json:"id"`
+	UserID            int32              `json:"user_id"`
+	BusID             int32              `json:"bus_id"`
+	ReservedAt        pgtype.Timestamptz `json:"reserved_at"`
+	Status            string             `json:"status"`
+	SeatReservationID int32              `json:"seat_reservation_id"`
 }
 
 func (q *Queries) GetTicketByID(ctx context.Context, id int32) (GetTicketByIDRow, error) {
@@ -123,6 +125,8 @@ func (q *Queries) GetTicketByID(ctx context.Context, id int32) (GetTicketByIDRow
 		&i.UserID,
 		&i.BusID,
 		&i.ReservedAt,
+		&i.Status,
+		&i.SeatReservationID,
 	)
 	return i, err
 }
@@ -184,19 +188,21 @@ const listUserTickets = `-- name: ListUserTickets :many
 SELECT 
     t.id AS ticket_id,
     t.bus_id,
-    t.seat_id,
+    sr.bus_seat_id AS seat_id,
     t.reserved_at,
     b.departure_time,
     b.arrival_time,
     b.price,
     s.seat_number,
-    s.status
+    sr.status AS reservation_status
 FROM 
     tickets t
 JOIN 
     buses b ON t.bus_id = b.id
 JOIN 
-    bus_seats s ON t.seat_id = s.id
+    seat_reservations sr ON t.seat_reservation_id = sr.id
+JOIN 
+    bus_seats s ON sr.bus_seat_id = s.id
 WHERE 
     t.user_id = $1
 ORDER BY 
@@ -204,15 +210,15 @@ ORDER BY
 `
 
 type ListUserTicketsRow struct {
-	TicketID      int32              `json:"ticket_id"`
-	BusID         int32              `json:"bus_id"`
-	SeatID        int32              `json:"seat_id"`
-	ReservedAt    pgtype.Timestamptz `json:"reserved_at"`
-	DepartureTime time.Time          `json:"departure_time"`
-	ArrivalTime   time.Time          `json:"arrival_time"`
-	Price         int32              `json:"price"`
-	SeatNumber    int32              `json:"seat_number"`
-	Status        int32              `json:"status"`
+	TicketID          int32              `json:"ticket_id"`
+	BusID             int32              `json:"bus_id"`
+	SeatID            int32              `json:"seat_id"`
+	ReservedAt        pgtype.Timestamptz `json:"reserved_at"`
+	DepartureTime     time.Time          `json:"departure_time"`
+	ArrivalTime       time.Time          `json:"arrival_time"`
+	Price             int32              `json:"price"`
+	SeatNumber        int32              `json:"seat_number"`
+	ReservationStatus string             `json:"reservation_status"`
 }
 
 func (q *Queries) ListUserTickets(ctx context.Context, userID int32) ([]ListUserTicketsRow, error) {
@@ -233,7 +239,7 @@ func (q *Queries) ListUserTickets(ctx context.Context, userID int32) ([]ListUser
 			&i.ArrivalTime,
 			&i.Price,
 			&i.SeatNumber,
-			&i.Status,
+			&i.ReservationStatus,
 		); err != nil {
 			return nil, err
 		}
@@ -246,34 +252,34 @@ func (q *Queries) ListUserTickets(ctx context.Context, userID int32) ([]ListUser
 }
 
 const purchaseTicket = `-- name: PurchaseTicket :one
-INSERT INTO tickets (user_id, bus_id, seat_id, status, purchased_at)
+INSERT INTO tickets (user_id, bus_id, seat_reservation_id, status, purchased_at)
 VALUES ($1, $2, $3, 'purchased', NOW())
-RETURNING id, user_id, bus_id, seat_id, status, purchased_at
+RETURNING id, user_id, bus_id, seat_reservation_id, status, purchased_at
 `
 
 type PurchaseTicketParams struct {
-	UserID int32 `json:"user_id"`
-	BusID  int32 `json:"bus_id"`
-	SeatID int32 `json:"seat_id"`
+	UserID            int32 `json:"user_id"`
+	BusID             int32 `json:"bus_id"`
+	SeatReservationID int32 `json:"seat_reservation_id"`
 }
 
 type PurchaseTicketRow struct {
-	ID          int32              `json:"id"`
-	UserID      int32              `json:"user_id"`
-	BusID       int32              `json:"bus_id"`
-	SeatID      int32              `json:"seat_id"`
-	Status      string             `json:"status"`
-	PurchasedAt pgtype.Timestamptz `json:"purchased_at"`
+	ID                int32              `json:"id"`
+	UserID            int32              `json:"user_id"`
+	BusID             int32              `json:"bus_id"`
+	SeatReservationID int32              `json:"seat_reservation_id"`
+	Status            string             `json:"status"`
+	PurchasedAt       pgtype.Timestamptz `json:"purchased_at"`
 }
 
 func (q *Queries) PurchaseTicket(ctx context.Context, arg PurchaseTicketParams) (PurchaseTicketRow, error) {
-	row := q.db.QueryRow(ctx, purchaseTicket, arg.UserID, arg.BusID, arg.SeatID)
+	row := q.db.QueryRow(ctx, purchaseTicket, arg.UserID, arg.BusID, arg.SeatReservationID)
 	var i PurchaseTicketRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.BusID,
-		&i.SeatID,
+		&i.SeatReservationID,
 		&i.Status,
 		&i.PurchasedAt,
 	)
@@ -281,36 +287,52 @@ func (q *Queries) PurchaseTicket(ctx context.Context, arg PurchaseTicketParams) 
 }
 
 const reserveTicket = `-- name: ReserveTicket :one
-INSERT INTO tickets (user_id, bus_id, seat_id, status, reserved_at)
+INSERT INTO tickets (user_id, bus_id, seat_reservation_id, status, reserved_at)
 VALUES ($1, $2, $3, 'reserved', NOW())
-RETURNING id, user_id, bus_id, seat_id, status, reserved_at
+RETURNING id, user_id, bus_id, seat_reservation_id, status, reserved_at
 `
 
 type ReserveTicketParams struct {
-	UserID int32 `json:"user_id"`
-	BusID  int32 `json:"bus_id"`
-	SeatID int32 `json:"seat_id"`
+	UserID            int32 `json:"user_id"`
+	BusID             int32 `json:"bus_id"`
+	SeatReservationID int32 `json:"seat_reservation_id"`
 }
 
 type ReserveTicketRow struct {
-	ID         int32              `json:"id"`
-	UserID     int32              `json:"user_id"`
-	BusID      int32              `json:"bus_id"`
-	SeatID     int32              `json:"seat_id"`
-	Status     string             `json:"status"`
-	ReservedAt pgtype.Timestamptz `json:"reserved_at"`
+	ID                int32              `json:"id"`
+	UserID            int32              `json:"user_id"`
+	BusID             int32              `json:"bus_id"`
+	SeatReservationID int32              `json:"seat_reservation_id"`
+	Status            string             `json:"status"`
+	ReservedAt        pgtype.Timestamptz `json:"reserved_at"`
 }
 
 func (q *Queries) ReserveTicket(ctx context.Context, arg ReserveTicketParams) (ReserveTicketRow, error) {
-	row := q.db.QueryRow(ctx, reserveTicket, arg.UserID, arg.BusID, arg.SeatID)
+	row := q.db.QueryRow(ctx, reserveTicket, arg.UserID, arg.BusID, arg.SeatReservationID)
 	var i ReserveTicketRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.BusID,
-		&i.SeatID,
+		&i.SeatReservationID,
 		&i.Status,
 		&i.ReservedAt,
 	)
 	return i, err
+}
+
+const updateTicketStatus = `-- name: UpdateTicketStatus :exec
+UPDATE tickets
+SET status = $2
+WHERE id = $1
+`
+
+type UpdateTicketStatusParams struct {
+	ID     int32  `json:"id"`
+	Status string `json:"status"`
+}
+
+func (q *Queries) UpdateTicketStatus(ctx context.Context, arg UpdateTicketStatusParams) error {
+	_, err := q.db.Exec(ctx, updateTicketStatus, arg.ID, arg.Status)
+	return err
 }

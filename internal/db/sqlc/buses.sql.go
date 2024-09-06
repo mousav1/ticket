@@ -43,6 +43,38 @@ func (q *Queries) CheckBusRouteAssociation(ctx context.Context, arg CheckBusRout
 	return i, err
 }
 
+const checkSeatAvailability = `-- name: CheckSeatAvailability :one
+SELECT 
+    s.id AS seat_id, 
+    s.status 
+FROM 
+    bus_seats s
+LEFT JOIN 
+    seat_reservations sr ON s.id = sr.bus_seat_id AND sr.status IN ('reserved', 'purchased')
+WHERE 
+    s.id = $1 
+    AND s.bus_id = $2
+    AND s.status = 'available' -- Ensures seat is available
+    AND sr.id IS NULL
+`
+
+type CheckSeatAvailabilityParams struct {
+	ID    int32 `json:"id"`
+	BusID int32 `json:"bus_id"`
+}
+
+type CheckSeatAvailabilityRow struct {
+	SeatID int32  `json:"seat_id"`
+	Status string `json:"status"`
+}
+
+func (q *Queries) CheckSeatAvailability(ctx context.Context, arg CheckSeatAvailabilityParams) (CheckSeatAvailabilityRow, error) {
+	row := q.db.QueryRow(ctx, checkSeatAvailability, arg.ID, arg.BusID)
+	var i CheckSeatAvailabilityRow
+	err := row.Scan(&i.SeatID, &i.Status)
+	return i, err
+}
+
 const createBus = `-- name: CreateBus :one
 
 INSERT INTO buses (route_id, departure_time, arrival_time, capacity, price, bus_type, corporation, super_corporation, service_number, is_vip)
@@ -95,32 +127,24 @@ func (q *Queries) CreateBus(ctx context.Context, arg CreateBusParams) (Bus, erro
 }
 
 const createBusSeat = `-- name: CreateBusSeat :one
-INSERT INTO bus_seats (bus_id, seat_number, status, passenger_national_code)
-VALUES ($1, $2, $3, $4)
-RETURNING id, bus_id, seat_number, status, passenger_national_code
+INSERT INTO bus_seats (bus_id, seat_number, status)
+VALUES ($1, $2, 'available')
+RETURNING id, bus_id, seat_number, status
 `
 
 type CreateBusSeatParams struct {
-	BusID                 int32       `json:"bus_id"`
-	SeatNumber            int32       `json:"seat_number"`
-	Status                int32       `json:"status"`
-	PassengerNationalCode pgtype.Text `json:"passenger_national_code"`
+	BusID      int32 `json:"bus_id"`
+	SeatNumber int32 `json:"seat_number"`
 }
 
 func (q *Queries) CreateBusSeat(ctx context.Context, arg CreateBusSeatParams) (BusSeat, error) {
-	row := q.db.QueryRow(ctx, createBusSeat,
-		arg.BusID,
-		arg.SeatNumber,
-		arg.Status,
-		arg.PassengerNationalCode,
-	)
+	row := q.db.QueryRow(ctx, createBusSeat, arg.BusID, arg.SeatNumber)
 	var i BusSeat
 	err := row.Scan(
 		&i.ID,
 		&i.BusID,
 		&i.SeatNumber,
 		&i.Status,
-		&i.PassengerNationalCode,
 	)
 	return i, err
 }
@@ -132,11 +156,12 @@ SELECT
     bs.status
 FROM
     bus_seats bs
-    JOIN buses b ON bs.bus_id = b.id
+JOIN 
+    buses b ON bs.bus_id = b.id
 WHERE
     b.route_id = $1
     AND bs.bus_id = $2
-    AND bs.status = 0 
+    AND bs.status = 'available' -- Only select seats that are available
 ORDER BY
     bs.seat_number
 `
@@ -147,9 +172,9 @@ type GetAvailableSeatsForBusParams struct {
 }
 
 type GetAvailableSeatsForBusRow struct {
-	SeatID     int32 `json:"seat_id"`
-	SeatNumber int32 `json:"seat_number"`
-	Status     int32 `json:"status"`
+	SeatID     int32  `json:"seat_id"`
+	SeatNumber int32  `json:"seat_number"`
+	Status     string `json:"status"`
 }
 
 func (q *Queries) GetAvailableSeatsForBus(ctx context.Context, arg GetAvailableSeatsForBusParams) ([]GetAvailableSeatsForBusRow, error) {
@@ -198,7 +223,7 @@ func (q *Queries) GetBusByID(ctx context.Context, id int32) (Bus, error) {
 }
 
 const getBusSeats = `-- name: GetBusSeats :many
-SELECT id, bus_id, seat_number, status, passenger_national_code
+SELECT id, bus_id, seat_number, status
 FROM bus_seats
 WHERE bus_id = $1
 `
@@ -217,7 +242,6 @@ func (q *Queries) GetBusSeats(ctx context.Context, busID int32) ([]BusSeat, erro
 			&i.BusID,
 			&i.SeatNumber,
 			&i.Status,
-			&i.PassengerNationalCode,
 		); err != nil {
 			return nil, err
 		}
@@ -231,16 +255,19 @@ func (q *Queries) GetBusSeats(ctx context.Context, busID int32) ([]BusSeat, erro
 
 const getSeatByID = `-- name: GetSeatByID :one
 SELECT 
-    s.id AS seat_id,
-    s.bus_id,
-    s.seat_number,
-    s.status,
-    s.passenger_national_code
+    bs.id AS seat_id,                
+    bs.bus_id,                  
+    bs.seat_number, 
+    bs.status AS seat_status,              
+    sr.status AS reservation_status,
+    sr.user_id
 FROM 
-    bus_seats s
+    bus_seats bs
+LEFT JOIN 
+    seat_reservations sr ON bs.id = sr.bus_seat_id
 WHERE 
-    s.id = $1
-    AND s.bus_id = $2
+    bs.id = $1
+    AND bs.bus_id = $2 
 LIMIT 1
 `
 
@@ -250,11 +277,12 @@ type GetSeatByIDParams struct {
 }
 
 type GetSeatByIDRow struct {
-	SeatID                int32       `json:"seat_id"`
-	BusID                 int32       `json:"bus_id"`
-	SeatNumber            int32       `json:"seat_number"`
-	Status                int32       `json:"status"`
-	PassengerNationalCode pgtype.Text `json:"passenger_national_code"`
+	SeatID            int32       `json:"seat_id"`
+	BusID             int32       `json:"bus_id"`
+	SeatNumber        int32       `json:"seat_number"`
+	SeatStatus        string      `json:"seat_status"`
+	ReservationStatus pgtype.Text `json:"reservation_status"`
+	UserID            pgtype.Int4 `json:"user_id"`
 }
 
 func (q *Queries) GetSeatByID(ctx context.Context, arg GetSeatByIDParams) (GetSeatByIDRow, error) {
@@ -264,51 +292,11 @@ func (q *Queries) GetSeatByID(ctx context.Context, arg GetSeatByIDParams) (GetSe
 		&i.SeatID,
 		&i.BusID,
 		&i.SeatNumber,
-		&i.Status,
-		&i.PassengerNationalCode,
+		&i.SeatStatus,
+		&i.ReservationStatus,
+		&i.UserID,
 	)
 	return i, err
-}
-
-const listAvailableSeats = `-- name: ListAvailableSeats :many
-SELECT 
-    bs.id AS seat_id,
-    bs.seat_number,
-    bs.status
-FROM 
-    bus_seats bs
-    JOIN buses b ON bs.bus_id = b.id
-WHERE 
-    bs.bus_id = $1
-    AND bs.status = 0 -- Assuming status = 0 means the seat is available
-ORDER BY 
-    bs.seat_number
-`
-
-type ListAvailableSeatsRow struct {
-	SeatID     int32 `json:"seat_id"`
-	SeatNumber int32 `json:"seat_number"`
-	Status     int32 `json:"status"`
-}
-
-func (q *Queries) ListAvailableSeats(ctx context.Context, busID int32) ([]ListAvailableSeatsRow, error) {
-	rows, err := q.db.Query(ctx, listAvailableSeats, busID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListAvailableSeatsRow{}
-	for rows.Next() {
-		var i ListAvailableSeatsRow
-		if err := rows.Scan(&i.SeatID, &i.SeatNumber, &i.Status); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const searchBuses = `-- name: SearchBuses :many
@@ -403,22 +391,37 @@ func (q *Queries) SearchBusesByCities(ctx context.Context, arg SearchBusesByCiti
 	return items, nil
 }
 
-const updateSeatStatus = `-- name: UpdateSeatStatus :exec
-UPDATE bus_seats
+const updateSeatReservationStatus = `-- name: UpdateSeatReservationStatus :exec
+UPDATE seat_reservations
 SET 
-    status = $1,
-    passenger_national_code = $2
+    status = $1
 WHERE 
-    id = $3
+    bus_seat_id = $2
+    AND user_id = $3
 `
 
-type UpdateSeatStatusParams struct {
-	Status                int32       `json:"status"`
-	PassengerNationalCode pgtype.Text `json:"passenger_national_code"`
-	ID                    int32       `json:"id"`
+type UpdateSeatReservationStatusParams struct {
+	Status    string `json:"status"`
+	BusSeatID int32  `json:"bus_seat_id"`
+	UserID    int32  `json:"user_id"`
 }
 
-func (q *Queries) UpdateSeatStatus(ctx context.Context, arg UpdateSeatStatusParams) error {
-	_, err := q.db.Exec(ctx, updateSeatStatus, arg.Status, arg.PassengerNationalCode, arg.ID)
+func (q *Queries) UpdateSeatReservationStatus(ctx context.Context, arg UpdateSeatReservationStatusParams) error {
+	_, err := q.db.Exec(ctx, updateSeatReservationStatus, arg.Status, arg.BusSeatID, arg.UserID)
+	return err
+}
+
+const updateSeatStatusAfterTrip = `-- name: UpdateSeatStatusAfterTrip :exec
+
+
+UPDATE bus_seats
+SET status = 'available'
+WHERE bus_id = $1
+  AND status = 'purchased'
+`
+
+// Ensures no conflicting reservation or purchase exists
+func (q *Queries) UpdateSeatStatusAfterTrip(ctx context.Context, busID int32) error {
+	_, err := q.db.Exec(ctx, updateSeatStatusAfterTrip, busID)
 	return err
 }

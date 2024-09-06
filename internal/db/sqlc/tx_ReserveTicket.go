@@ -27,18 +27,19 @@ func (store *Store) ReserveTicketTx(ctx context.Context, arg ReserveTicketTxPara
 
 		// Reserve the seat by creating a ticket
 		ticket, err := q.ReserveTicket(ctx, ReserveTicketParams{
-			UserID: arg.UserID,
-			BusID:  arg.BusID,
-			SeatID: arg.SeatID,
+			UserID:            arg.UserID,
+			BusID:             arg.BusID,
+			SeatReservationID: arg.SeatID,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to reserve ticket: %v", err)
 		}
 
 		// Update seat status to reserved
-		err = q.UpdateSeatStatus(ctx, UpdateSeatStatusParams{
-			ID:     arg.SeatID,
-			Status: 1, // Assuming 1 means reserved
+		err = q.UpdateSeatReservationStatus(ctx, UpdateSeatReservationStatusParams{
+			BusSeatID: arg.SeatID,
+			Status:    "reserved",
+			UserID:    arg.UserID,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to update seat status: %v", err)
@@ -48,7 +49,7 @@ func (store *Store) ReserveTicketTx(ctx context.Context, arg ReserveTicketTxPara
 		result = reserveSeatResponse{
 			TicketID:   ticket.ID,
 			BusID:      ticket.BusID,
-			SeatID:     ticket.SeatID,
+			SeatID:     ticket.SeatReservationID,
 			ReservedAt: ticket.ReservedAt.Time,
 		}
 

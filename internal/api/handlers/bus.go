@@ -48,7 +48,7 @@ func (h *BusHandler) ListAvailableSeats(c *fiber.Ctx) error {
 	}
 
 	// Validate request parameters
-	validate := validator.New() // Consider using a globally defined validator
+	validate := validator.New()
 	if err := validate.Struct(&req); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -63,7 +63,6 @@ func (h *BusHandler) ListAvailableSeats(c *fiber.Ctx) error {
 		if err == sql.ErrNoRows {
 			return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Bus or Route not found or they do not match"})
 		}
-		// Log error here for debugging if necessary
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to validate bus and route association"})
 	}
 

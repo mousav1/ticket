@@ -28,18 +28,19 @@ func (store *Store) PurchaseTicketTx(ctx context.Context, arg PurchaseTicketTxPa
 
 		// Reserve the ticket by updating the status to purchased
 		ticket, err := q.PurchaseTicket(ctx, PurchaseTicketParams{
-			UserID: arg.UserID,
-			BusID:  arg.BusID,
-			SeatID: arg.SeatID,
+			UserID:            arg.UserID,
+			BusID:             arg.BusID,
+			SeatReservationID: arg.SeatID,
 		})
 		if err != nil {
 			return err
 		}
 
 		// Update seat status to purchased
-		err = q.UpdateSeatStatus(ctx, UpdateSeatStatusParams{
-			ID:     arg.SeatID,
-			Status: 2, // Assuming 2 means purchased
+		err = q.UpdateSeatReservationStatus(ctx, UpdateSeatReservationStatusParams{
+			BusSeatID: arg.SeatID,
+			Status:    "purchased",
+			UserID:    arg.UserID,
 		})
 		if err != nil {
 			return err
