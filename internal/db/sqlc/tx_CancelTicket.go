@@ -18,7 +18,7 @@ func (store *Store) CancelTicketTx(ctx context.Context, arg CancelTicketParams) 
 		// Update the ticket status to canceled
 		err := q.UpdateTicketStatus(ctx, UpdateTicketStatusParams{
 			ID:     arg.TicketID,
-			Status: "canceled", // Assuming 0 means canceled
+			Status: "canceled",
 		})
 		if err != nil {
 			return fmt.Errorf("failed to update ticket status: %w", err)
@@ -27,7 +27,7 @@ func (store *Store) CancelTicketTx(ctx context.Context, arg CancelTicketParams) 
 		// Update the seat status to available
 		err = q.UpdateSeatReservationStatus(ctx, UpdateSeatReservationStatusParams{
 			BusSeatID: arg.SeatID,
-			Status:    "purchased",
+			Status:    "canceled",
 			UserID:    arg.UserID,
 		})
 		if err != nil {

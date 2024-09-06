@@ -3,7 +3,6 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -19,12 +18,16 @@ type TicketHandler struct {
 	config     util.Config
 }
 
+// Request structure for listing available seats
+type CancelTicketRequest struct {
+	TicketID int32 `params:"ticket_id" validate:"required"`
+}
+
 // Request structure for reserving a seat
 type reserveSeatRequest struct {
-	RouteID               int32  `json:"route_id" validate:"required"`
-	BusID                 int32  `json:"bus_id" validate:"required"`
-	SeatID                int32  `json:"seat_id" validate:"required"`
-	PassengerNationalCode string `json:"passenger_national_code" validate:"required"`
+	RouteID int32 `json:"route_id" validate:"required"`
+	BusID   int32 `json:"bus_id" validate:"required"`
+	SeatID  int32 `json:"seat_id" validate:"required"`
 }
 
 // Response structure for seat reservation
@@ -231,10 +234,9 @@ func (h *TicketHandler) ListUserTickets(c *fiber.Ctx) error {
 
 // CancelTicket handles the request to cancel a ticket
 func (h *TicketHandler) CancelTicket(c *fiber.Ctx) error {
-	// Parse ticket ID from URL parameters
-	ticketID, err := strconv.Atoi(c.Params("id"))
-	if err != nil || ticketID <= 0 {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid ticket ID"})
+	var req CancelTicketRequest
+	if err := c.ParamsParser(&req); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request parameters"})
 	}
 
 	// Extract user information from token payload
@@ -245,7 +247,7 @@ func (h *TicketHandler) CancelTicket(c *fiber.Ctx) error {
 	}
 
 	// Retrieve the ticket details
-	ticket, err := h.store.GetTicketByID(c.Context(), int32(ticketID))
+	ticket, err := h.store.GetTicketByID(c.Context(), req.TicketID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Ticket not found"})
