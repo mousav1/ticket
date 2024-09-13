@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/mousv1/ticket/internal/token"
-	"github.com/mousv1/ticket/internal/util"
+	"github.com/mousav1/ticket/internal/token"
+	"github.com/mousav1/ticket/internal/util"
 	"github.com/stretchr/testify/require"
 )
 

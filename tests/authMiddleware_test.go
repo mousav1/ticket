@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mousv1/ticket/internal/api"
-	"github.com/mousv1/ticket/internal/api/middleware"
-	db "github.com/mousv1/ticket/internal/db/sqlc"
-	"github.com/mousv1/ticket/internal/token"
-	"github.com/mousv1/ticket/internal/util"
+	"github.com/mousav1/ticket/internal/api"
+	"github.com/mousav1/ticket/internal/api/middleware"
+	db "github.com/mousav1/ticket/internal/db/sqlc"
+	"github.com/mousav1/ticket/internal/token"
+	"github.com/mousav1/ticket/internal/util"
 	"github.com/stretchr/testify/require"
 )
 

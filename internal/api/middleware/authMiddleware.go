@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/mousv1/ticket/internal/token"
+	"github.com/mousav1/ticket/internal/token"
 )
 
 const (

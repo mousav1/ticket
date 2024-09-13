@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
-	db "github.com/mousv1/ticket/internal/db/sqlc"
-	"github.com/mousv1/ticket/internal/token"
-	"github.com/mousv1/ticket/internal/util"
+	db "github.com/mousav1/ticket/internal/db/sqlc"
+	"github.com/mousav1/ticket/internal/token"
+	"github.com/mousav1/ticket/internal/util"
 )
 
 type CityHandler struct {

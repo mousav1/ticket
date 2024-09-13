@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"github.com/mousv1/ticket/internal/api"
-	"github.com/mousv1/ticket/internal/api/handlers"
-	"github.com/mousv1/ticket/internal/api/middleware"
+	"github.com/mousav1/ticket/internal/api"
+	"github.com/mousav1/ticket/internal/api/handlers"
+	"github.com/mousav1/ticket/internal/api/middleware"
 )
 
 func SetupRoutes(server *api.Server) error {

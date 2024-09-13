@@ -1,4 +1,4 @@
-module github.com/mousv1/ticket
+module github.com/mousav1/ticket
 
 go 1.23.0
 
